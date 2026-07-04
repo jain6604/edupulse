@@ -1,0 +1,38 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+frontend/build/
+.npm
+
+# Database
+*.db
+*.sqlite
+
+# Uploads (user data - don't commit)
+backend/uploads/
+
+# Power BI temp files
+*.pbix.lock
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Environment
+.env
+.env.local
+.env.production

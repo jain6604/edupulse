@@ -1,0 +1,234 @@
+TRUNCATE TABLE msrit_scores CASCADE;
+TRUNCATE TABLE staging_msrit_scores CASCADE;
+TRUNCATE TABLE dim_subject CASCADE;
+
+-- ============================================
+-- SEMESTER 1 & 2 (COMMON TO ALL BRANCHES)
+-- ============================================
+INSERT INTO dim_subject (subject_id, subject_name, subject_code, credits, branch, semester_number) VALUES
+(gen_random_uuid(), 'Engineering Mathematics I', 'MA101', 4, 'COMMON', 1),
+(gen_random_uuid(), 'Engineering Physics', 'PH101', 4, 'COMMON', 1),
+(gen_random_uuid(), 'Programming in C', 'CS101', 4, 'COMMON', 1),
+(gen_random_uuid(), 'Engineering Graphics', 'ME101', 3, 'COMMON', 1),
+(gen_random_uuid(), 'Constitution of India', 'HS101', 1, 'COMMON', 1),
+(gen_random_uuid(), 'Engineering Chemistry', 'CH101', 4, 'COMMON', 2),
+(gen_random_uuid(), 'Engineering Mathematics II', 'MA102', 4, 'COMMON', 2),
+(gen_random_uuid(), 'Elements of Civil Engineering', 'CV101', 3, 'COMMON', 2),
+(gen_random_uuid(), 'Elements of Electrical Engineering', 'EE101', 3, 'COMMON', 2),
+(gen_random_uuid(), 'Workshop Practice', 'ME102', 2, 'COMMON', 2);
+
+-- ============================================
+-- CSE SEMESTERS 3-8
+-- ============================================
+INSERT INTO dim_subject (subject_id, subject_name, subject_code, credits, branch, semester_number) VALUES
+-- Semester 3
+(gen_random_uuid(), 'Engineering Mathematics III', 'MA301', 4, 'CSE', 3),
+(gen_random_uuid(), 'Digital Electronics', 'CS301', 4, 'CSE', 3),
+(gen_random_uuid(), 'Data Structures & Algorithms', 'CS302', 4, 'CSE', 3),
+(gen_random_uuid(), 'Object Oriented Programming', 'CS303', 4, 'CSE', 3),
+(gen_random_uuid(), 'Discrete Mathematics', 'CS304', 4, 'CSE', 3),
+(gen_random_uuid(), 'Computer Organization', 'CS305', 3, 'CSE', 3),
+-- Semester 4
+(gen_random_uuid(), 'Design & Analysis of Algorithms', 'CS401', 4, 'CSE', 4),
+(gen_random_uuid(), 'Microprocessors & Microcontrollers', 'CS402', 4, 'CSE', 4),
+(gen_random_uuid(), 'Database Management Systems', 'CS403', 4, 'CSE', 4),
+(gen_random_uuid(), 'Operating Systems', 'CS404', 4, 'CSE', 4),
+(gen_random_uuid(), 'Object Oriented Modeling & Design', 'CS405', 3, 'CSE', 4),
+(gen_random_uuid(), 'Software Engineering', 'CS406', 3, 'CSE', 4),
+-- Semester 5
+(gen_random_uuid(), 'Computer Networks', 'CS501', 4, 'CSE', 5),
+(gen_random_uuid(), 'Compiler Design', 'CS502', 4, 'CSE', 5),
+(gen_random_uuid(), 'Machine Learning', 'CS503', 4, 'CSE', 5),
+(gen_random_uuid(), 'Web Technologies', 'CS504', 3, 'CSE', 5),
+(gen_random_uuid(), 'Automata Theory & Computability', 'CS505', 4, 'CSE', 5),
+(gen_random_uuid(), 'Professional Ethics', 'HS501', 2, 'CSE', 5),
+-- Semester 6
+(gen_random_uuid(), 'Artificial Intelligence', 'CS601', 4, 'CSE', 6),
+(gen_random_uuid(), 'Computer Graphics & Visualization', 'CS602', 3, 'CSE', 6),
+(gen_random_uuid(), 'Information Security', 'CS603', 4, 'CSE', 6),
+(gen_random_uuid(), 'Cloud Computing', 'CS604', 3, 'CSE', 6),
+(gen_random_uuid(), 'Big Data Analytics', 'CS605', 3, 'CSE', 6),
+(gen_random_uuid(), 'Elective I', 'CS6E1', 3, 'CSE', 6),
+-- Semester 7
+(gen_random_uuid(), 'Distributed Computing', 'CS701', 4, 'CSE', 7),
+(gen_random_uuid(), 'Deep Learning', 'CS702', 4, 'CSE', 7),
+(gen_random_uuid(), 'Internet of Things', 'CS703', 3, 'CSE', 7),
+(gen_random_uuid(), 'Elective II', 'CS7E1', 3, 'CSE', 7),
+(gen_random_uuid(), 'Elective III', 'CS7E2', 3, 'CSE', 7),
+(gen_random_uuid(), 'Project Phase I', 'CS7P1', 2, 'CSE', 7),
+-- Semester 8
+(gen_random_uuid(), 'Project Phase II', 'CS8P1', 10, 'CSE', 8),
+(gen_random_uuid(), 'Elective IV', 'CS8E1', 3, 'CSE', 8),
+(gen_random_uuid(), 'Seminar', 'CS8S1', 2, 'CSE', 8);
+
+-- ============================================
+-- ISE SEMESTERS 3-8
+-- ============================================
+INSERT INTO dim_subject (subject_id, subject_name, subject_code, credits, branch, semester_number) VALUES
+-- Semester 3
+(gen_random_uuid(), 'Engineering Mathematics III', 'MA301', 4, 'ISE', 3),
+(gen_random_uuid(), 'Digital Electronics', 'IS301', 4, 'ISE', 3),
+(gen_random_uuid(), 'Data Structures & Algorithms', 'IS302', 4, 'ISE', 3),
+(gen_random_uuid(), 'Object Oriented Programming', 'IS303', 4, 'ISE', 3),
+(gen_random_uuid(), 'Discrete Mathematics', 'IS304', 4, 'ISE', 3),
+(gen_random_uuid(), 'Unix & Shell Programming', 'IS305', 3, 'ISE', 3),
+-- Semester 4
+(gen_random_uuid(), 'Design & Analysis of Algorithms', 'IS401', 4, 'ISE', 4),
+(gen_random_uuid(), 'Microprocessors & Interfacing', 'IS402', 4, 'ISE', 4),
+(gen_random_uuid(), 'Database Management Systems', 'IS403', 4, 'ISE', 4),
+(gen_random_uuid(), 'Operating Systems', 'IS404', 4, 'ISE', 4),
+(gen_random_uuid(), 'Software Engineering', 'IS405', 3, 'ISE', 4),
+(gen_random_uuid(), 'Computer Organization', 'IS406', 3, 'ISE', 4),
+-- Semester 5
+(gen_random_uuid(), 'Computer Networks', 'IS501', 4, 'ISE', 5),
+(gen_random_uuid(), 'Compiler Design', 'IS502', 4, 'ISE', 5),
+(gen_random_uuid(), 'Machine Learning', 'IS503', 4, 'ISE', 5),
+(gen_random_uuid(), 'Web Technologies', 'IS504', 3, 'ISE', 5),
+(gen_random_uuid(), 'Information Theory & Coding', 'IS505', 4, 'ISE', 5),
+(gen_random_uuid(), 'Professional Ethics', 'HS501', 2, 'ISE', 5),
+-- Semester 6
+(gen_random_uuid(), 'Artificial Intelligence', 'IS601', 4, 'ISE', 6),
+(gen_random_uuid(), 'Information Security', 'IS602', 4, 'ISE', 6),
+(gen_random_uuid(), 'Cloud Computing', 'IS603', 3, 'ISE', 6),
+(gen_random_uuid(), 'Data Mining & Warehousing', 'IS604', 3, 'ISE', 6),
+(gen_random_uuid(), 'Software Testing', 'IS605', 3, 'ISE', 6),
+(gen_random_uuid(), 'Elective I', 'IS6E1', 3, 'ISE', 6),
+-- Semester 7
+(gen_random_uuid(), 'Distributed Systems', 'IS701', 4, 'ISE', 7),
+(gen_random_uuid(), 'Deep Learning', 'IS702', 4, 'ISE', 7),
+(gen_random_uuid(), 'Blockchain Technology', 'IS703', 3, 'ISE', 7),
+(gen_random_uuid(), 'Elective II', 'IS7E1', 3, 'ISE', 7),
+(gen_random_uuid(), 'Project Phase I', 'IS7P1', 2, 'ISE', 7),
+-- Semester 8
+(gen_random_uuid(), 'Project Phase II', 'IS8P1', 10, 'ISE', 8),
+(gen_random_uuid(), 'Elective III', 'IS8E1', 3, 'ISE', 8),
+(gen_random_uuid(), 'Seminar', 'IS8S1', 2, 'ISE', 8);
+
+-- ============================================
+-- ECE SEMESTERS 3-8
+-- ============================================
+INSERT INTO dim_subject (subject_id, subject_name, subject_code, credits, branch, semester_number) VALUES
+-- Semester 3
+(gen_random_uuid(), 'Engineering Mathematics III', 'MA301', 4, 'ECE', 3),
+(gen_random_uuid(), 'Network Analysis', 'EC301', 4, 'ECE', 3),
+(gen_random_uuid(), 'Electronic Devices & Circuits', 'EC302', 4, 'ECE', 3),
+(gen_random_uuid(), 'Digital Electronics', 'EC303', 4, 'ECE', 3),
+(gen_random_uuid(), 'Signals & Systems', 'EC304', 4, 'ECE', 3),
+(gen_random_uuid(), 'Object Oriented Programming', 'CS303', 3, 'ECE', 3),
+-- Semester 4
+(gen_random_uuid(), 'Engineering Mathematics IV', 'MA401', 4, 'ECE', 4),
+(gen_random_uuid(), 'Analog & Digital Communication', 'EC401', 4, 'ECE', 4),
+(gen_random_uuid(), 'Linear Integrated Circuits', 'EC402', 4, 'ECE', 4),
+(gen_random_uuid(), 'Microprocessors & Microcontrollers', 'EC403', 4, 'ECE', 4),
+(gen_random_uuid(), 'Electromagnetics', 'EC404', 4, 'ECE', 4),
+(gen_random_uuid(), 'Control Systems', 'EC405', 3, 'ECE', 4),
+-- Semester 5
+(gen_random_uuid(), 'Digital Signal Processing', 'EC501', 4, 'ECE', 5),
+(gen_random_uuid(), 'VLSI Design', 'EC502', 4, 'ECE', 5),
+(gen_random_uuid(), 'Computer Networks', 'EC503', 3, 'ECE', 5),
+(gen_random_uuid(), 'Information Theory & Coding', 'EC504', 4, 'ECE', 5),
+(gen_random_uuid(), 'Antenna & Wave Propagation', 'EC505', 4, 'ECE', 5),
+(gen_random_uuid(), 'Professional Ethics', 'HS501', 2, 'ECE', 5),
+-- Semester 6
+(gen_random_uuid(), 'Wireless Communication', 'EC601', 4, 'ECE', 6),
+(gen_random_uuid(), 'Embedded Systems', 'EC602', 4, 'ECE', 6),
+(gen_random_uuid(), 'Machine Learning for ECE', 'EC603', 3, 'ECE', 6),
+(gen_random_uuid(), 'Optical Fiber Communication', 'EC604', 3, 'ECE', 6),
+(gen_random_uuid(), 'Digital Image Processing', 'EC605', 3, 'ECE', 6),
+(gen_random_uuid(), 'Elective I', 'EC6E1', 3, 'ECE', 6),
+-- Semester 7
+(gen_random_uuid(), 'Internet of Things', 'EC701', 3, 'ECE', 7),
+(gen_random_uuid(), 'RF & Microwave Engineering', 'EC702', 4, 'ECE', 7),
+(gen_random_uuid(), 'Advanced VLSI Design', 'EC703', 4, 'ECE', 7),
+(gen_random_uuid(), 'Elective II', 'EC7E1', 3, 'ECE', 7),
+(gen_random_uuid(), 'Project Phase I', 'EC7P1', 2, 'ECE', 7),
+-- Semester 8
+(gen_random_uuid(), 'Project Phase II', 'EC8P1', 10, 'ECE', 8),
+(gen_random_uuid(), 'Elective III', 'EC8E1', 3, 'ECE', 8),
+(gen_random_uuid(), 'Seminar', 'EC8S1', 2, 'ECE', 8);
+
+-- ============================================
+-- ME SEMESTERS 3-8
+-- ============================================
+INSERT INTO dim_subject (subject_id, subject_name, subject_code, credits, branch, semester_number) VALUES
+-- Semester 3
+(gen_random_uuid(), 'Engineering Mathematics III', 'MA301', 4, 'ME', 3),
+(gen_random_uuid(), 'Material Science & Metallurgy', 'ME301', 4, 'ME', 3),
+(gen_random_uuid(), 'Mechanics of Materials', 'ME302', 4, 'ME', 3),
+(gen_random_uuid(), 'Thermodynamics', 'ME303', 4, 'ME', 3),
+(gen_random_uuid(), 'Manufacturing Processes I', 'ME304', 4, 'ME', 3),
+(gen_random_uuid(), 'Fluid Mechanics', 'ME305', 3, 'ME', 3),
+-- Semester 4
+(gen_random_uuid(), 'Engineering Mathematics IV', 'MA401', 4, 'ME', 4),
+(gen_random_uuid(), 'Applied Thermodynamics', 'ME401', 4, 'ME', 4),
+(gen_random_uuid(), 'Kinematics of Machines', 'ME402', 4, 'ME', 4),
+(gen_random_uuid(), 'Manufacturing Processes II', 'ME403', 4, 'ME', 4),
+(gen_random_uuid(), 'Turbo Machines', 'ME404', 4, 'ME', 4),
+(gen_random_uuid(), 'Computer Aided Machine Drawing', 'ME405', 3, 'ME', 4),
+-- Semester 5
+(gen_random_uuid(), 'Dynamics of Machines', 'ME501', 4, 'ME', 5),
+(gen_random_uuid(), 'Heat & Mass Transfer', 'ME502', 4, 'ME', 5),
+(gen_random_uuid(), 'Machine Design I', 'ME503', 4, 'ME', 5),
+(gen_random_uuid(), 'Metrology & Quality Control', 'ME504', 3, 'ME', 5),
+(gen_random_uuid(), 'Operations Research', 'ME505', 3, 'ME', 5),
+(gen_random_uuid(), 'Professional Ethics', 'HS501', 2, 'ME', 5),
+-- Semester 6
+(gen_random_uuid(), 'Machine Design II', 'ME601', 4, 'ME', 6),
+(gen_random_uuid(), 'Finite Element Methods', 'ME602', 4, 'ME', 6),
+(gen_random_uuid(), 'CAD/CAM', 'ME603', 4, 'ME', 6),
+(gen_random_uuid(), 'Industrial Engineering', 'ME604', 3, 'ME', 6),
+(gen_random_uuid(), 'Refrigeration & Air Conditioning', 'ME605', 3, 'ME', 6),
+(gen_random_uuid(), 'Elective I', 'ME6E1', 3, 'ME', 6),
+-- Semester 7
+(gen_random_uuid(), 'Robotics & Automation', 'ME701', 4, 'ME', 7),
+(gen_random_uuid(), 'Advanced Manufacturing Systems', 'ME702', 4, 'ME', 7),
+(gen_random_uuid(), 'Non-Destructive Testing', 'ME703', 3, 'ME', 7),
+(gen_random_uuid(), 'Elective II', 'ME7E1', 3, 'ME', 7),
+(gen_random_uuid(), 'Project Phase I', 'ME7P1', 2, 'ME', 7),
+-- Semester 8
+(gen_random_uuid(), 'Project Phase II', 'ME8P1', 10, 'ME', 8),
+(gen_random_uuid(), 'Elective III', 'ME8E1', 3, 'ME', 8),
+(gen_random_uuid(), 'Seminar', 'ME8S1', 2, 'ME', 8);
+
+-- ============================================
+-- EIE SEMESTERS 3-8
+-- ============================================
+INSERT INTO dim_subject (subject_id, subject_name, subject_code, credits, branch, semester_number) VALUES
+-- Semester 3
+(gen_random_uuid(), 'Engineering Mathematics III', 'MA301', 4, 'EIE', 3),
+(gen_random_uuid(), 'Network Analysis', 'EI301', 4, 'EIE', 3),
+(gen_random_uuid(), 'Electronic Devices & Circuits', 'EI302', 4, 'EIE', 3),
+(gen_random_uuid(), 'Transducers & Sensors', 'EI303', 4, 'EIE', 3),
+(gen_random_uuid(), 'Digital Electronics', 'EI304', 3, 'EIE', 3),
+(gen_random_uuid(), 'Control Systems I', 'EI305', 3, 'EIE', 3),
+-- Semester 4
+(gen_random_uuid(), 'Engineering Mathematics IV', 'MA401', 4, 'EIE', 4),
+(gen_random_uuid(), 'Analog Electronics', 'EI401', 4, 'EIE', 4),
+(gen_random_uuid(), 'Control Systems II', 'EI402', 4, 'EIE', 4),
+(gen_random_uuid(), 'Microprocessors & Applications', 'EI403', 4, 'EIE', 4),
+(gen_random_uuid(), 'Signals & Systems', 'EI404', 4, 'EIE', 4),
+(gen_random_uuid(), 'Industrial Instrumentation I', 'EI405', 3, 'EIE', 4),
+-- Semester 5
+(gen_random_uuid(), 'Industrial Instrumentation II', 'EI501', 4, 'EIE', 5),
+(gen_random_uuid(), 'Process Control', 'EI502', 4, 'EIE', 5),
+(gen_random_uuid(), 'Digital Signal Processing', 'EI503', 4, 'EIE', 5),
+(gen_random_uuid(), 'Biomedical Instrumentation', 'EI504', 3, 'EIE', 5),
+(gen_random_uuid(), 'Virtual Instrumentation', 'EI505', 3, 'EIE', 5),
+(gen_random_uuid(), 'Professional Ethics', 'HS501', 2, 'EIE', 5),
+-- Semester 6
+(gen_random_uuid(), 'Analytical Instrumentation', 'EI601', 4, 'EIE', 6),
+(gen_random_uuid(), 'Embedded Systems', 'EI602', 4, 'EIE', 6),
+(gen_random_uuid(), 'VLSI Design', 'EI603', 3, 'EIE', 6),
+(gen_random_uuid(), 'Robotics', 'EI604', 3, 'EIE', 6),
+(gen_random_uuid(), 'Wireless Sensor Networks', 'EI605', 3, 'EIE', 6),
+(gen_random_uuid(), 'Elective I', 'EI6E1', 3, 'EIE', 6),
+-- Semester 7
+(gen_random_uuid(), 'Internet of Things', 'EI701', 3, 'EIE', 7),
+(gen_random_uuid(), 'Machine Learning for Engineers', 'EI702', 4, 'EIE', 7),
+(gen_random_uuid(), 'Smart Instrumentation', 'EI703', 4, 'EIE', 7),
+(gen_random_uuid(), 'Elective II', 'EI7E1', 3, 'EIE', 7),
+(gen_random_uuid(), 'Project Phase I', 'EI7P1', 2, 'EIE', 7),
+-- Semester 8
+(gen_random_uuid(), 'Project Phase II', 'EI8P1', 10, 'EIE', 8),
+(gen_random_uuid(), 'Elective III', 'EI8E1', 3, 'EIE', 8),
+(gen_random_uuid(), 'Seminar', 'EI8S1', 2, 'EIE', 8);
