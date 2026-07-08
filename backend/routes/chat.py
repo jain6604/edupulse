@@ -3,15 +3,22 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 import os
+import time
+import logging
 import google.generativeai as genai
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    print(f"GEMINI_API_KEY loaded: {GEMINI_API_KEY[:8]}...")
+else:
+    raise RuntimeError("Gemini API key is missing or empty. Please configure GEMINI_API_KEY in .env")
 
 class ChatRequest(BaseModel):
     message: str
@@ -43,6 +50,8 @@ def chat_with_ai(student_id: str, request: ChatRequest, db: Session = Depends(ge
         'placement_score': round(float(placement.score), 1) if placement and placement.score else 'N/A',
     }
 
+    logger.info(f"Chat request for student: {student_id}")
+    logger.info(f"Student context loaded: name={student_data['name']}, gpa={student_data['gpa']}")
     print(f"Student context: {student_data}")
 
     system_instruction = f"""You are EduPulse AI, a smart and friendly academic advisor for {student_data['name']} at MS Ramaiah Institute of Technology.
@@ -74,14 +83,38 @@ RULES:
 - Never write long paragraphs
 """
 
-    try:
+    def call_gemini():
         model = genai.GenerativeModel(
             model_name='gemini-2.5-flash-lite',
             system_instruction=system_instruction,
             generation_config={"max_output_tokens": 300}
         )
         chat = model.start_chat(history=[])
-        response = chat.send_message(request.message, request_options={"timeout": 15})
+        return chat.send_message(request.message, request_options={"timeout": 25})
+
+    logger.info("Calling Gemini API...")
+    try:
+        response = call_gemini()
+        logger.info("Gemini response received successfully")
         return {"response": response.text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to communicate with AI: {str(e)}")
+        logger.error(f"Gemini API error: {e}")
+        error_text = str(e).lower()
+        if "timeout" in error_text:
+            logger.info("Gemini timeout occurred, retrying after 2 seconds")
+            time.sleep(2)
+            try:
+                response = call_gemini()
+                logger.info("Gemini response received successfully on retry")
+                return {"response": response.text}
+            except Exception as retry_exception:
+                logger.error(f"Gemini retry error: {retry_exception}")
+
+    fallback = (
+        f"Hi {student_data['name']}! I'm having trouble connecting right now. "
+        f"Based on your data: your GPA is {student_data['gpa']}, attendance is {student_data['attendance']}%, "
+        f"risk level is {student_data['risk_level']}, and placement score is {student_data['placement_score']}/100. "
+        "Try asking me again in a moment!"
+    )
+    logger.info("Returning fallback chat response")
+    return {"response": fallback, "fallback": True}

@@ -63,14 +63,18 @@ def get_leaderboard(db: Session = Depends(get_db)):
     leaderboard = []
 
     for student in students:
-        scores = db.query(RawScores).filter(RawScores.student_id == student.student_id).all()
-        attendance = db.query(RawAttendance).filter(RawAttendance.student_id == student.student_id).all()
+        msrit_scores = db.query(MsritScores).filter(MsritScores.student_id == student.student_id).all()
+        if msrit_scores:
+            avg_score = round(sum(float(s.final_total or 0) for s in msrit_scores) / len(msrit_scores), 2) if msrit_scores else 0
+        else:
+            scores = db.query(RawScores).filter(RawScores.student_id == student.student_id).all()
+            avg_score = round(sum(
+                float(s.assignment_score or 0) * 0.2 +
+                float(s.midterm_score or 0) * 0.3 +
+                float(s.final_score or 0) * 0.5
+                for s in scores) / len(scores), 2) if scores else 0
 
-        avg_score = round(sum(
-            float(s.assignment_score or 0) * 0.2 +
-            float(s.midterm_score or 0) * 0.3 +
-            float(s.final_score or 0) * 0.5
-            for s in scores) / len(scores), 2) if scores else 0
+        attendance = db.query(RawAttendance).filter(RawAttendance.student_id == student.student_id).all()
 
         attendance_pct = round(
             (sum(a.classes_attended for a in attendance) /
@@ -80,6 +84,8 @@ def get_leaderboard(db: Session = Depends(get_db)):
         gpa = round((avg_score / 100) * 10, 2)
 
         leaderboard.append({
+            "student_id": str(student.student_id),
+            "name": student.name,
             "branch": student.branch,
             "avg_score": avg_score,
             "attendance_pct": attendance_pct,
@@ -192,9 +198,13 @@ def get_batch_analytics(db: Session = Depends(get_db)):
 
     batch_data = []
     for student in students:
-        scores = db.query(RawScores).filter(RawScores.student_id == student.student_id).all()
+        msrit_scores = db.query(MsritScores).filter(MsritScores.student_id == student.student_id).all()
+        if msrit_scores:
+            avg_score = round(sum(float(s.final_total or 0) for s in msrit_scores) / len(msrit_scores), 2) if msrit_scores else 0
+        else:
+            scores = db.query(RawScores).filter(RawScores.student_id == student.student_id).all()
+            avg_score = round(sum(float(s.final_score or 0) for s in scores) / len(scores), 2) if scores else 0
         attendance = db.query(RawAttendance).filter(RawAttendance.student_id == student.student_id).all()
-        avg_score = round(sum(float(s.final_score or 0) for s in scores) / len(scores), 2) if scores else 0
         attendance_pct = round((sum(a.classes_attended for a in attendance) / sum(a.total_classes for a in attendance)) * 100, 2) if attendance else 0
         batch_data.append({
             "name": student.name,
@@ -207,8 +217,8 @@ def get_batch_analytics(db: Session = Depends(get_db)):
     return {
         "total_students": len(students),
         "top_performers": batch_data[:10],
-        "batch_avg_score": round(sum(s["avg_score"] for s in batch_data) / len(batch_data), 2),
-        "batch_avg_attendance": round(sum(s["attendance_pct"] for s in batch_data) / len(batch_data), 2)
+        "batch_avg_score": round(sum(s["avg_score"] for s in batch_data) / len(batch_data), 2) if batch_data else 0,
+        "batch_avg_attendance": round(sum(s["attendance_pct"] for s in batch_data) / len(batch_data), 2) if batch_data else 0
     }
 
 

@@ -56,38 +56,11 @@ function ChatAssistant() {
 
   if (!isOpen) {
     return (
-      <button className="chat-button"
+      <button id="chat-toggle-btn" className="chat-button"
         onClick={() => setIsOpen(true)}
-        style={{
-          position: 'fixed',
-          bottom: '30px',
-          right: '30px',
-          width: '60px',
-          height: '60px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #d4af62, #60a5fa)',
-          border: 'none',
-          cursor: 'pointer',
-          boxShadow: '0 0 20px rgba(212,175,98,0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '24px',
-          color: 'white',
-          zIndex: 1000,
-          animation: 'pulse 2s infinite'
-        }}
+        style={{ display: 'none' }}
       >
         <span role="img" aria-label="chat">💬</span>
-        <style>
-          {`
-            @keyframes pulse {
-              0% { box-shadow: 0 0 0 0 rgba(212,175,98,0.4); }
-              70% { box-shadow: 0 0 0 15px rgba(212,175,98,0); }
-              100% { box-shadow: 0 0 0 0 rgba(212,175,98,0); }
-            }
-          `}
-        </style>
       </button>
     );
   }
@@ -99,10 +72,10 @@ function ChatAssistant() {
       right: '30px',
       width: '380px',
       height: '500px',
-      background: '#03060f',
-      borderRadius: '16px',
-      border: '1px solid rgba(255,255,255,0.06)',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(212,175,98,0.1)',
+      background: 'var(--chalk-bg)',
+      borderRadius: '8px',
+      border: '1.5px solid var(--chalk-border)',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.05)',
       display: 'flex',
       flexDirection: 'column',
       zIndex: 1000,
@@ -118,10 +91,10 @@ function ChatAssistant() {
         alignItems: 'center'
       }}>
         <div>
-          <h3 style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '800' }}>
-            <span className="glow-text">EduPulse AI</span>
+          <h3 style={{ margin: 0, fontFamily: 'Patrick Hand, cursive', fontSize: '20px', fontWeight: '800' }}>
+            <span>EduPulse AI</span>
           </h3>
-          <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Your personal academic advisor</p>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--chalk-dim)', fontFamily: 'Patrick Hand' }}>Your personal academic advisor</p>
         </div>
         <button
           onClick={() => setIsOpen(false)}
@@ -153,13 +126,13 @@ function ChatAssistant() {
           }}>
             <div style={{
               padding: '12px 16px',
-              borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              background: msg.role === 'user' ? 'linear-gradient(135deg, #d4af62, #60a5fa)' : 'rgba(255,255,255,0.05)',
-              border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.06)',
-              color: msg.isError ? '#f87171' : 'white',
-              fontSize: '14px',
-              lineHeight: '1.5',
-              fontFamily: 'Space Grotesk, sans-serif'
+              borderRadius: msg.role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+              background: msg.role === 'user' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)',
+              border: '1px solid var(--chalk-border)',
+              color: msg.isError ? 'var(--chalk-pink)' : 'var(--chalk-white)',
+              fontSize: '15px',
+              lineHeight: '1.4',
+              fontFamily: 'Patrick Hand, cursive'
             }}>
               {msg.content}
             </div>
@@ -204,11 +177,12 @@ function ChatAssistant() {
                 style={{
                   whiteSpace: 'nowrap',
                   padding: '6px 12px',
-                  borderRadius: '12px',
-                  background: 'rgba(212,175,98,0.1)',
-                  border: '1px solid rgba(212,175,98,0.3)',
-                  color: '#e2e8f0',
-                  fontSize: '12px',
+                  borderRadius: '6px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1.5px solid var(--chalk-border)',
+                  color: 'var(--chalk-white)',
+                  fontFamily: 'Patrick Hand',
+                  fontSize: '13px',
                   cursor: 'pointer'
                 }}
               >
@@ -227,11 +201,12 @@ function ChatAssistant() {
             style={{
               flex: 1,
               padding: '10px 14px',
-              borderRadius: '8px',
+              borderRadius: '6px',
               background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'white',
-              fontSize: '14px',
+              border: '1.5px solid var(--chalk-border)',
+              color: 'var(--chalk-white)',
+              fontFamily: 'Patrick Hand',
+              fontSize: '15px',
               outline: 'none'
             }}
             disabled={isTyping}
@@ -241,10 +216,11 @@ function ChatAssistant() {
             disabled={!inputText.trim() || isTyping}
             style={{
               padding: '0 16px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #d4af62, #60a5fa)',
-              border: 'none',
-              color: 'white',
+              borderRadius: '6px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1.5px solid var(--chalk-border)',
+              color: 'var(--chalk-white)',
+              fontFamily: 'Patrick Hand',
               cursor: inputText.trim() && !isTyping ? 'pointer' : 'not-allowed',
               opacity: inputText.trim() && !isTyping ? 1 : 0.5
             }}

@@ -27,31 +27,32 @@ const engineeringQuotes = [
 export function usePageTransition() {
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [animationIndex, setAnimationIndex] = useState(0);
+  const [prevLocation, setPrevLocation] = useState(location);
   const [currentQuote, setCurrentQuote] = useState(engineeringQuotes[0]);
   const [lastQuoteIndex, setLastQuoteIndex] = useState(0);
 
   useEffect(() => {
-    setIsTransitioning(true);
-    
-    // Cycle animation (0 to 3)
-    setAnimationIndex((prev) => (prev + 1) % 4);
-    
-    // Get random quote different from last
-    let nextQuoteIdx;
-    do {
-      nextQuoteIdx = Math.floor(Math.random() * engineeringQuotes.length);
-    } while (nextQuoteIdx === lastQuoteIndex);
-    
-    setCurrentQuote(engineeringQuotes[nextQuoteIdx]);
-    setLastQuoteIndex(nextQuoteIdx);
+    if (location.pathname !== prevLocation.pathname) {
+      setIsTransitioning(true);
+      
+      // Get random quote different from last
+      let nextQuoteIdx;
+      do {
+        nextQuoteIdx = Math.floor(Math.random() * engineeringQuotes.length);
+      } while (nextQuoteIdx === lastQuoteIndex);
+      
+      setCurrentQuote(engineeringQuotes[nextQuoteIdx]);
+      setLastQuoteIndex(nextQuoteIdx);
 
-    const timer = setTimeout(() => {
-      setIsTransitioning(false);
-    }, 2000);
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        setPrevLocation(location);
+      }, 2500);
 
-    return () => clearTimeout(timer);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  return { isTransitioning, animationIndex, currentQuote };
+  return { isTransitioning, prevLocation, currentQuote };
 }

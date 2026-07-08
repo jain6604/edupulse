@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response
 from fastapi.responses import FileResponse
 import shutil
 from sqlalchemy.orm import Session
@@ -218,6 +218,14 @@ def upload_photo(student_id: str, file: UploadFile = File(...), db: Session = De
         
     return {"photo_url": f"/uploads/photos/{filename}"}
 
+@router.head("/{student_id}/photo")
+def head_photo(student_id: str):
+    for ext in ["jpg", "jpeg", "png"]:
+        filepath = f"uploads/photos/{student_id}.{ext}"
+        if os.path.exists(filepath):
+            return Response(status_code=200)
+    raise HTTPException(status_code=404, detail="Photo not found")
+
 @router.get("/{student_id}/photo")
 def get_photo(student_id: str):
     # Check common extensions
@@ -248,6 +256,13 @@ def get_resume(student_id: str):
     filepath = f"uploads/resumes/{student_id}.pdf"
     if os.path.exists(filepath):
         return FileResponse(filepath)
+    raise HTTPException(status_code=404, detail="Resume not found")
+
+@router.head("/{student_id}/resume")
+def head_resume(student_id: str):
+    filepath = f"uploads/resumes/{student_id}.pdf"
+    if os.path.exists(filepath):
+        return Response(status_code=200)
     raise HTTPException(status_code=404, detail="Resume not found")
 
 @router.delete("/{student_id}/resume")

@@ -1,10 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAnalytics, getCGPA, getSubjectPerformance, getBatchComparison, getCorrelationInsights, getMsritScoreSummary, predictStudent, getBatchSummary } from '../services/api';
 import ChatAssistant from '../components/ChatAssistant';
 import PageBackground from '../components/PageBackground';
-import { AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Custom label for PieChart
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value, name, percent }) => {
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius * 1.2;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const textAnchor = x > cx ? 'start' : 'end';
+  return (
+    <text x={x} y={y} fill="var(--chalk-white)" textAnchor={textAnchor} dominantBaseline="central" style={{fontFamily:'Patrick Hand', fontSize:'12px'}}>
+      {name} ({value})
+    </text>
+  );
+};
 
 function Dashboard() {
   const { student, logout } = useAuth();
@@ -13,22 +27,17 @@ function Dashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [cgpa, setCgpa] = useState(null);
   const [subjectPerformance, setSubjectPerformance] = useState([]);
-  const [currentSemester, setCurrentSemester] = useState(null);
   const [batchComparison, setBatchComparison] = useState(null);
   const [insights, setInsights] = useState([]);
-  const [msritSummary, setMsritSummary] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [batchSummary, setBatchSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (student) loadData();
-  }, [student]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (!student) return;
     setLoading(true);
     try {
-      const [analyticsRes, cgpaRes, subjectRes, batchRes, insightsRes, msritRes, predRes] = await Promise.all([
+      const [analyticsRes, cgpaRes, subjectRes, batchRes, insightsRes, , predRes, batchSummaryRes] = await Promise.all([
         getAnalytics(student.student_id).catch(() => ({ data: null })),
         getCGPA(student.student_id).catch(() => ({ data: null })),
         getSubjectPerformance(student.student_id).catch(() => ({ data: { subjects: [] } })),
@@ -41,30 +50,31 @@ function Dashboard() {
       setAnalytics(analyticsRes.data);
       setCgpa(cgpaRes.data);
       setSubjectPerformance(subjectRes.data?.subjects || []);
-      setCurrentSemester(subjectRes.data?.semester_number || null);
       setBatchComparison(batchRes.data);
       setInsights(insightsRes.data || []);
-      setMsritSummary(msritRes.data);
       setPrediction(predRes.data);
-      setBatchSummary(batchRes.data);
+      setBatchSummary(batchSummaryRes.data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [student]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#03060f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#d4af62', fontFamily: 'Syne, sans-serif' }}>Loading Dashboard...</p>
+      <div style={{ minHeight: '100vh', background: 'var(--chalk-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--chalk-white)', fontFamily: 'Patrick Hand, cursive', fontSize:'24px' }}>Wiping the chalkboard...</p>
       </div>
     );
   }
 
   const displayCgpa = cgpa?.cgpa ?? cgpa?.gpa ?? analytics?.gpa ?? 0;
   const riskLevel = prediction?.predicted_risk || analytics?.risk_level || 'HIGH';
-
   const truncate = (str) => str.length > 8 ? str.substring(0, 7) + '.' : str;
   const chartData = subjectPerformance.map(s => ({
     subject: s.subject_name ? s.subject_name.substring(0, 8) + (s.subject_name.length > 8 ? '..' : '') : 'Sub',
@@ -72,346 +82,233 @@ function Dashboard() {
     fullName: s.subject_name || 'Subject',
     shortName: truncate(s.subject_name || 'Subject')
   }));
-  
-  console.log('chartData:', chartData);
   const scoreTrendData = chartData.slice(-6);
 
   const riskData = [
-    { name: 'LOW', value: batchSummary?.risk_distribution?.LOW || 13, color: '#d4af62' },
-    { name: 'MEDIUM', value: batchSummary?.risk_distribution?.MEDIUM || 5, color: '#60a5fa' },
-    { name: 'HIGH', value: batchSummary?.risk_distribution?.HIGH || 5, color: '#f87171' }
+    { name: 'LOW', value: batchSummary?.risk_distribution?.LOW || 13, color: 'var(--chalk-yellow)' },
+    { name: 'MEDIUM', value: batchSummary?.risk_distribution?.MEDIUM || 5, color: 'var(--chalk-cyan)' },
+    { name: 'HIGH', value: batchSummary?.risk_distribution?.HIGH || 5, color: 'var(--chalk-pink)' }
   ];
-  const COLORS = ['#d4af62', '#60a5fa', '#f87171'];
-
   const placementScore = analytics?.placement_score || 0;
-  const placementData = [{ name: 'Placement', value: placementScore, fill: '#d4af62' }];
+
+  const NavItem = ({ icon, label, path }) => {
+    const active = window.location.pathname === path;
+    const strokeColor = active ? "var(--chalk-yellow)" : "rgba(255,255,255,0.6)";
+    const shadow = active ? "drop-shadow(0 0 6px var(--chalk-yellow))" : "none";
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', cursor:'pointer' }} onClick={() => navigate(path)}>
+        <div style={{ width:'54px', height:'54px', display:'flex', alignItems:'center', justifyContent:'center', filter: shadow }}>
+          {icon(strokeColor)}
+        </div>
+        <div style={{ fontFamily:'Patrick Hand', fontSize:'11px', color: strokeColor, marginTop:'-4px' }}>{label}</div>
+      </div>
+    );
+  };
 
   return (
-    <div className="app-container" style={{ background: '#03060f', color: '#ffffff', fontFamily: 'Space Grotesk, sans-serif' }}>
-      
+    <div className="classroom">
       <PageBackground />
-
-      {/* Left Icon Sidebar / Bottom Nav */}
-      <div className="app-sidebar">
-        <div className="mobile-hide" style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #d4af62, #60a5fa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne, sans-serif', fontSize: '20px', fontWeight: '800', marginBottom: '40px' }}>E</div>
+      
+      {/* Left Wooden Shelf (ShelfNav) */}
+      <div className="shelf-nav" style={{
+        background: 'var(--shelf-bg)',
+        borderRight: '3px solid #2a1505',
+        boxShadow: 'inset -4px 0 12px rgba(0,0,0,0.4)',
+        backgroundImage: 'repeating-linear-gradient(92deg, transparent 0px, transparent 8px, rgba(255,255,255,0.015) 8px, rgba(255,255,255,0.015) 9px), repeating-linear-gradient(180deg, transparent 0px, transparent 62px, rgba(0,0,0,0.25) 62px, rgba(0,0,0,0.25) 66px)',
+        zIndex: 10
+      }}>
+        <div style={{ fontFamily:'Patrick Hand', color:'rgba(255,220,160,0.8)', fontSize:'13px', marginBottom:'24px' }} className="shelf-nav-title">EduPulse</div>
         
-        {/* Nav Icons */}
-        <div className="app-sidebar-nav">
-          <button onClick={() => navigate('/dashboard')} title="Dashboard" style={{ background: 'rgba(212,175,98,0.1)', border: 'none', color: '#d4af62', width: '44px', height: '44px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-          </button>
-          <button onClick={() => navigate('/input')} title="Data Input" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', width: '44px', height: '44px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-          </button>
-          <button onClick={() => navigate('/insights')} title="Insights" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', width: '44px', height: '44px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-          </button>
-          <button onClick={() => navigate('/placement')} title="Placement" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', width: '44px', height: '44px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-          </button>
-          <button onClick={() => navigate('/skills')} title="Skills" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', width: '44px', height: '44px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          </button>
-          <button onClick={() => navigate('/profile')} title="Profile" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', width: '44px', height: '44px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          </button>
-          <button onClick={() => navigate('/support')} title="Support" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', width: '44px', height: '44px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          </button>
-        </div>
-        <div className="mobile-hide" style={{ flex: 1 }} />
-        <button className="mobile-hide" onClick={logout} title="Logout" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-        </button>
+        <NavItem path="/dashboard" label="Dashboard" icon={(c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke={c} strokeWidth="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>} />
+        <div className="shelf-nav-divider" />
+        
+        <NavItem path="/insights" label="Insights" icon={(c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke={c} strokeWidth="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>} />
+        <div className="shelf-nav-divider" />
+        
+        <NavItem path="/placement" label="Placement" icon={(c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke={c} strokeWidth="1.5"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10"></path><path d="M5 4h14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path><path d="M7 10v7a5 5 0 0 0 10 0v-7"></path></svg>} />
+        <div className="shelf-nav-divider" />
+        
+        <NavItem path="/skills" label="Skills" icon={(c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke={c} strokeWidth="1.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>} />
+        <div className="shelf-nav-divider" />
+        
+        <NavItem path="/achievements" label="Achieve" icon={(c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke={c} strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>} />
+        <div className="shelf-nav-divider" />
+        
+        <NavItem path="/profile" label="Profile" icon={(c) => <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke={c} strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>} />
+        <div className="shelf-nav-divider" />
       </div>
 
-      {/* Main Content */}
-      <div className="app-content">
-        
-        {/* Top bar */}
-        <div className="card dashboard-top-bar" style={{ padding: '32px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-          <div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '8px', fontSize: '15px' }}>Overview</p>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '32px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-              Welcome back, <span className="glow-text">{analytics?.name || student?.name || 'Student'}</span>
-            </h2>
+      <div className="chalkboard" style={{ padding: '20px 40px', overflowY: 'auto', zIndex: 10 }}>
+        {/* Top Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ fontFamily: 'Patrick Hand', color: 'rgba(255,255,255,0.32)', fontSize: '12px' }}>
+            MS Ramaiah Institute of Technology · EduPulse
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ border: '1px solid #d4af62', color: '#d4af62', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', background: '#d4af62', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', cursor:'pointer' }} onClick={() => navigate('/input')}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5"><polygon points="12 19 21 10 14 3 5 12 5 19 12 19"></polygon></svg>
+              <div style={{ fontFamily:'Patrick Hand', fontSize:'9px', color:'rgba(255,255,255,0.6)', marginTop:'2px' }}>Input</div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', cursor:'pointer' }} onClick={logout}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.08)" stroke="rgba(255,160,100,0.75)" strokeWidth="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="rgba(255,160,100,0.75)" fill="none" />
+                <rect x="7" y="7" width="10" height="10" stroke="rgba(255,160,100,0.75)" fill="none" />
+                <path d="M12 12 L24 12 L20 8 M24 12 L20 16" stroke="rgba(255,160,100,0.75)" fill="none" />
+              </svg>
+              <div style={{ fontFamily:'Patrick Hand', fontSize:'9px', color:'rgba(255,160,100,0.75)', marginTop:'2px' }}>Logout</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky Note */}
+        <div style={{ position:'absolute', top:'48px', right:'16px', zIndex:10, transform:'rotate(2deg)', background:'#f0e060', width:'180px', padding:'12px', boxShadow:'2px 4px 10px rgba(0,0,0,0.3)' }}>
+          <div style={{ position:'absolute', top:'-6px', left:'50%', transform:'translateX(-50%)', width:'40px', height:'12px', background:'rgba(0,0,0,0.1)' }}></div>
+          <div style={{ fontFamily:'Patrick Hand', fontSize:'16px', fontWeight:'bold', color:'#333', borderBottom:'1px solid rgba(0,0,0,0.1)', paddingBottom:'4px', marginBottom:'6px' }}>📌 Reminder</div>
+          <div style={{ fontFamily:'Patrick Hand', fontSize:'14px', color:'#444', lineHeight:'1.3' }}>Keep attendance above 75%! You're great at {analytics?.attendance_percentage || 0}% ✓</div>
+        </div>
+
+        {/* Row 1: Name & Risk Badge */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontFamily: 'Patrick Hand', fontSize: '36px', color: 'var(--chalk-white)', borderBottom: '1.5px solid rgba(255,255,255,0.2)', display: 'inline-block', paddingBottom: '4px' }}>
+            {analytics?.name || student?.name || 'Student'}
+            <span style={{ fontSize: '14px', marginLeft: '16px', padding: '2px 8px', border: `1.5px dashed ${riskLevel==='LOW'?'var(--chalk-green)':riskLevel==='MEDIUM'?'var(--chalk-cyan)':'var(--chalk-pink)'}`, color: riskLevel==='LOW'?'var(--chalk-green)':riskLevel==='MEDIUM'?'var(--chalk-cyan)':'var(--chalk-pink)', verticalAlign: 'middle', borderRadius: '4px' }}>
               {riskLevel} RISK
-              <style>{`@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }`}</style>
-            </div>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #d4af62, #60a5fa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700' }}>
-              {(student?.name || 'S').charAt(0)}
-            </div>
-          </div>
+            </span>
+          </h2>
         </div>
 
-        {/* 5 stat tiles strip */}
-        <div className="grid-5" style={{ marginBottom: '32px' }}>
-          <div className="card" style={{ padding: '26px 20px', minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '11px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', letterSpacing: '1px', marginBottom: '10px' }}>GPA</p>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '28px', fontWeight: '800', marginBottom: '6px' }}>{Number(displayCgpa).toFixed(2)}</p>
-            <p style={{ fontSize: '13px', color: '#d4af62' }}>{batchComparison?.percentile_rank || batchComparison?.batch_percentile ? `Top ${Math.round(batchComparison.percentile_rank || batchComparison.batch_percentile)}%` : 'N/A'}</p>
-          </div>
-          <div className="card" style={{ padding: '26px 20px', minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '11px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', letterSpacing: '1px', marginBottom: '10px' }}>Attendance</p>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '28px', fontWeight: '800', marginBottom: '6px' }}>{analytics?.attendance_percentage || 0}%</p>
-            <p style={{ fontSize: '13px', color: '#d4af62' }}>Target: 75%</p>
-          </div>
-          <div className="card" style={{ padding: '26px 20px', minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '11px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', letterSpacing: '1px', marginBottom: '10px' }}>Study Hours</p>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '28px', fontWeight: '800', marginBottom: '6px' }}>{analytics?.avg_study_hours || 0}</p>
-            <p style={{ fontSize: '13px', color: '#d4af62' }}>Per week</p>
-          </div>
-          <div className="card" style={{ padding: '26px 20px', minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '11px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', letterSpacing: '1px', marginBottom: '10px' }}>Placement Score</p>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '28px', fontWeight: '800', marginBottom: '6px' }}>{placementScore}</p>
-            <p style={{ fontSize: '13px', color: '#d4af62' }}>Out of 100</p>
-          </div>
-          <div className="card" style={{ padding: '26px 20px', minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '11px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', letterSpacing: '1px', marginBottom: '10px' }}>Batch Rank</p>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '28px', fontWeight: '800', marginBottom: '6px' }}>#{batchComparison?.rank || 'N/A'}</p>
-            <p style={{ fontSize: '13px', color: '#d4af62' }}>{batchComparison?.total_students ? `of ${batchComparison.total_students} students` : 'in Batch'}</p>
-          </div>
+        {/* Row 2: Stats */}
+        <div style={{ display: 'flex', gap: '40px', padding: '16px 20px', flexWrap: 'wrap', marginBottom: '32px' }}>
+          {[
+            {label: 'GPA', value: Number(displayCgpa).toFixed(2), subtitle: `Top ${batchComparison?.percentile_rank || 'N/A'}%`, color: 'var(--chalk-yellow)'},
+            {label: 'Attendance', value: `${analytics?.attendance_percentage || 0}%`, subtitle: 'Target: 75%', color: 'var(--chalk-white)'},
+            {label: 'Study Hours', value: analytics?.avg_study_hours || 0, subtitle: 'Per week', color: 'var(--chalk-white)'},
+            {label: 'Placement Score', value: placementScore, subtitle: 'Out of 100', color: 'var(--chalk-cyan)'},
+            {label: 'Batch Rank', value: `#${batchComparison?.rank || 'N/A'}`, subtitle: `of ${batchComparison?.total_students || '?'} students`, color: 'var(--chalk-pink)'}
+          ].map((stat, i) => (
+            <div key={i} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '42px', fontFamily: 'Caveat', color: stat.color }}>{stat.value}</div>
+              <div style={{ fontFamily: 'Patrick Hand', color: 'var(--chalk-dim)', fontSize: '13px', borderBottom: '1.5px solid rgba(255,255,255,0.25)', paddingBottom: '3px' }}>{stat.label}</div>
+              <div style={{ fontFamily: 'Patrick Hand', color: 'var(--chalk-dim)', fontSize: '11px', marginTop: '3px' }}>{stat.subtitle}</div>
+            </div>
+          ))}
         </div>
 
-        {/* 3-column chart row */}
-        <div className="grid-3" style={{ marginBottom: '32px' }}>
-          <div className="card">
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '700', marginBottom: '20px' }}>{currentSemester ? `Sem ${currentSemester} Score Trend` : 'Score Trend'}</p>
-            <div style={{ height: '200px' }}>
-              {scoreTrendData.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)' }}>
-                  No score data yet
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={scoreTrendData}>
-                    <defs>
-                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="shortName" tick={{ fill: 'rgba(255,255,255,0.65)', fontSize: 10 }} angle={0} height={30} interval={0} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
-                    <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} width={35} />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'rgba(10,13,26,0.97)',
-                        border: '1px solid rgba(212,175,98,0.3)',
-                        borderRadius: '10px',
-                        color: 'white',
-                        fontSize: '12px'
-                      }}
-                      labelStyle={{ color: '#e9d5a7', fontWeight: '700', fontSize: '13px', marginBottom: '4px' }}
-                      itemStyle={{ color: '#ffffff', fontSize: '12px' }}
-                      formatter={(value, name) => [`${parseFloat(value).toFixed(1)} / 100`, 'Score']}
-                      labelFormatter={(label) => {
-                        const full = chartData.find(d => d.shortName === label);
-                        return `📚 ${full ? full.fullName : label}`;
-                      }}
-                    />
-                    <Area type="monotone" dataKey="score" stroke="#60a5fa" strokeWidth={3} fillOpacity={1} fill="url(#colorScore)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
+        {/* Row 3: BarChart, PieChart, Insights */}
+        <div style={{ display: 'flex', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
+          {/* Subject Performance */}
+          <div style={{ flex: '0 0 55%', minWidth: '300px' }}>
+            <div style={{ fontFamily: 'Patrick Hand', fontSize: '20px', color: 'var(--chalk-white)', borderBottom: '1.5px solid rgba(255,255,255,0.2)', marginBottom: '16px', display: 'inline-block' }}>Subject Performance</div>
+            <div style={{ height: '240px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                  <XAxis dataKey="shortName" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Patrick Hand' }} axisLine={{ stroke: 'rgba(255,255,255,0.25)' }} tickLine={false} />
+                  <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Patrick Hand' }} axisLine={{ stroke: 'rgba(255,255,255,0.25)' }} tickLine={false} />
+                  <Tooltip contentStyle={{ background: 'rgba(15,36,20,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontFamily: 'Patrick Hand', color: 'white' }} />
+                  <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                    {chartData.map((e, i) => (
+                      <Cell key={i} fill={i % 2 === 0 ? 'rgba(255,245,100,0.75)' : 'rgba(120,255,220,0.7)'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
           
-          <div className="card">
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '700', marginBottom: '10px' }}>Risk Distribution</p>
-            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <ResponsiveContainer width="100%" height={200}>
+          {/* Risk Distribution */}
+          <div style={{ flex: '0 0 25%', minWidth: '200px' }}>
+            <div style={{ fontFamily: 'Patrick Hand', fontSize: '20px', color: 'var(--chalk-white)', borderBottom: '1.5px solid rgba(255,255,255,0.2)', marginBottom: '16px', display: 'inline-block' }}>Risk Distribution</div>
+            <div style={{ height: '200px' }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <defs>
-                    <radialGradient id="lowGrad" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="#e9d5a7" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#d4af62" stopOpacity={0.8}/>
-                    </radialGradient>
-                    <radialGradient id="medGrad" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="#93c5fd" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    </radialGradient>
-                    <radialGradient id="highGrad" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="#fca5a5" stopOpacity={1}/>
-                      <stop offset="100%" stopColor="#dc2626" stopOpacity={0.8}/>
-                    </radialGradient>
-                  </defs>
-                  <Pie
-                    data={riskData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    <Cell fill="url(#lowGrad)" />
-                    <Cell fill="url(#medGrad)" />
-                    <Cell fill="url(#highGrad)" />
+                  <Pie data={riskData} cx="50%" cy="50%" innerRadius={0} outerRadius={60} paddingAngle={4} dataKey="value" stroke="none" labelLine={true} label={renderCustomizedLabel}>
+                    {riskData.map((e, i) => <Cell key={i} fill={e.color} />)}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: 'rgba(10,13,26,0.95)',
-                      border: '1px solid rgba(212,175,98,0.3)',
-                      borderRadius: '10px',
-                      color: 'white',
-                      fontSize: '12px',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
-                    }}
-                    formatter={(value, name) => [`${value} students`, name]}
-                  />
+                  <Tooltip contentStyle={{ background: 'rgba(15,36,20,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontFamily: 'Patrick Hand', color: 'white' }} />
                 </PieChart>
               </ResponsiveContainer>
-              <div style={{ display: 'flex', gap: '16px', marginTop: '-8px' }}>
-                {riskData.map((entry, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{
-                      width: '8px', height: '8px', borderRadius: '50%',
-                      background: i === 0 ? '#d4af62' : i === 1 ? '#60a5fa' : '#ef4444',
-                      boxShadow: i === 0 ? '0 0 6px #d4af62' : i === 1 ? '0 0 6px #60a5fa' : '0 0 6px #ef4444'
-                    }}/>
-                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>{entry.name} ({entry.value})</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
-
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '700', marginBottom: '10px' }}>Placement Readiness</p>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ height: '200px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart width={240} height={200} cx="50%" cy="100%" innerRadius="70%" outerRadius="100%" barSize={15} data={placementData} startAngle={180} endAngle={0} margin={{ top: -20, right: 0, bottom: 0, left: 0 }}>
-                    <RadialBar minAngle={15} background={{ fill: 'rgba(255,255,255,0.05)' }} clockWise dataKey="value" cornerRadius={10} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ marginTop: '-40px', textAlign: 'center' }}>
-                <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '42px', fontWeight: '800', color: '#d4af62', margin: 0, lineHeight: 1 }}>{placementScore}</p>
-                <span style={{ background: placementScore >= 70 ? 'rgba(52,211,153,0.1)' : 'rgba(245,158,11,0.1)', color: placementScore >= 70 ? '#34d399' : '#fbbf24', padding: '5px 20px', borderRadius: '12px', fontSize: '12px', fontWeight: '700', marginTop: '10px', display: 'inline-block', letterSpacing: '1px' }}>
-                  {placementScore >= 70 ? 'READY' : 'IN PROGRESS'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 2-column bottom row */}
-        <div className="grid-2-asym">
-          <div className="card" style={{ minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '700', marginBottom: '20px' }}>Subject Performance</p>
-            <div style={{ flex: 1, width: '100%' }}>
-              {chartData.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)' }}>
-                  No score data yet
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={320}>
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 10, right: 10, left: -10, bottom: 90 }}
-                    barSize={42}
-                  >
-                    <defs>
-                      <linearGradient id="barGold" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#e9d5a7" stopOpacity={1}/>
-                        <stop offset="100%" stopColor="#b8860b" stopOpacity={0.8}/>
-                      </linearGradient>
-                      <linearGradient id="barBlue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#93c5fd" stopOpacity={1}/>
-                        <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.8}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
-                    <XAxis
-                      dataKey="shortName"
-                      tick={{ fill: 'rgba(255,255,255,0.65)', fontSize: 10 }}
-                      angle={0}
-                      height={30}
-                      interval={0}
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
-                    />
-                    <YAxis
-                      domain={[0, 100]}
-                      tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 9 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(212,175,98,0.08)', radius: 4 }}
-                      contentStyle={{
-                        background: 'rgba(10,13,26,0.97)',
-                        border: '1px solid rgba(212,175,98,0.35)',
-                        borderRadius: '10px',
-                        color: 'white',
-                        fontSize: '12px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                        padding: '10px 14px'
-                      }}
-                      labelStyle={{ color: '#e9d5a7', fontWeight: '700', fontSize: '13px', marginBottom: '4px' }}
-                      itemStyle={{ color: '#ffffff', fontSize: '12px' }}
-                      formatter={(value, name) => [`${parseFloat(value).toFixed(1)} / 100`, 'Score']}
-                      labelFormatter={(label) => {
-                        const full = chartData.find(d => d.shortName === label);
-                        return `📚 ${full ? full.fullName : label}`;
-                      }}
-                    />
-                    <Bar dataKey="score" radius={[6, 6, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell
-                          key={index}
-                          fill={index % 2 === 0 ? 'url(#barGold)' : 'url(#barBlue)'}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-            {chartData.length > 0 && (
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '16px' }}>
-                <div style={{ background: 'rgba(212,175,98,0.08)', border: '1px solid rgba(212,175,98,0.18)', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
-                  Avg: {(chartData.reduce((acc, curr) => acc + curr.score, 0) / chartData.length).toFixed(1)}
-                </div>
-                <div style={{ background: 'rgba(212,175,98,0.08)', border: '1px solid rgba(212,175,98,0.18)', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
-                  Best: {chartData.reduce((prev, current) => (prev.score > current.score) ? prev : current).subject} {chartData.reduce((prev, current) => (prev.score > current.score) ? prev : current).score.toFixed(1)}
-                </div>
-                <div style={{ background: 'rgba(212,175,98,0.08)', border: '1px solid rgba(212,175,98,0.18)', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
-                  Needs Work: {chartData.reduce((prev, current) => (prev.score < current.score) ? prev : current).subject} {chartData.reduce((prev, current) => (prev.score < current.score) ? prev : current).score.toFixed(1)}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="card">
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '15px', fontWeight: '700', marginBottom: '20px' }}>AI Insights</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          
+          {/* Insights */}
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <div style={{ fontFamily: 'Patrick Hand', fontSize: '20px', color: 'var(--chalk-white)', borderBottom: '1.5px solid rgba(255,255,255,0.2)', marginBottom: '16px', display: 'inline-block' }}>Key Insights</div>
+            <ul style={{ listStyleType: 'none', padding: 0 }}>
               {insights.slice(0, 4).map((insight, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid rgba(212,175,98,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4af62', flexShrink: 0 }}>
-                    ⚡
-                  </div>
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: '700', color: '#ffffff', lineHeight: '1.4' }}>{insight.title || insight.insight}</p>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>{insight.description || insight.confidence}</p>
-                  </div>
-                </div>
+                <li key={idx} style={{ marginBottom: '12px', display: 'flex', gap: '8px', fontSize: '14px', fontFamily: 'Patrick Hand', color: 'var(--chalk-white)' }}>
+                  <span style={{ color: 'var(--chalk-yellow)' }}>•</span>
+                  <span>{insight.title || insight.insight}</span>
+                </li>
               ))}
-              {insights.length === 0 && (
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>No insights available yet. Please add more data.</p>
-              )}
-            </div>
+              {insights.length === 0 && <li style={{ fontSize: '14px', fontFamily: 'Patrick Hand', color: 'var(--chalk-dim)' }}>No insights yet.</li>}
+            </ul>
           </div>
         </div>
 
+        {/* Row 4: Radial Gauge & AreaChart */}
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '0 0 45%', minWidth: '300px', display:'flex', flexDirection:'column' }}>
+            <div style={{ fontFamily: 'Patrick Hand', fontSize: '20px', color: 'var(--chalk-white)', borderBottom: '1.5px solid rgba(255,255,255,0.2)', marginBottom: '24px', display: 'inline-block', alignSelf: 'flex-start' }}>Placement Readiness</div>
+            <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <svg viewBox="0 0 300 170" style={{ width: '100%', maxWidth: '420px', filter: 'drop-shadow(0 0 12px rgba(255,245,100,0.06))' }}>
+                <path d="M 25 150 A 125 125 0 0 1 275 150" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" strokeLinecap="round" />
+                <path d="M 25 150 A 125 125 0 0 1 275 150" fill="none" stroke="var(--chalk-yellow)" strokeWidth="12" strokeLinecap="round" strokeDasharray={Math.PI * 125} strokeDashoffset={(Math.PI * 125) * (1 - (placementScore / 100))} style={{ transition: 'stroke-dashoffset 1.5s ease-out' }} />
+                
+                <text x="150" y="128" textAnchor="middle" fill="var(--chalk-yellow)" fontFamily="Caveat, cursive" fontSize="56px" fontWeight="bold">{placementScore}</text>
+                <text x="150" y="150" textAnchor="middle" fill="var(--chalk-dim)" fontFamily="Patrick Hand, cursive" fontSize="16px">/100</text>
+              </svg>
+              
+              <div style={{ marginTop: '-8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {placementScore >= 70 ? (
+                  <span style={{ fontFamily: 'Patrick Hand', fontSize: '18px', color: 'var(--chalk-green)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ✓ PLACEMENT READY
+                  </span>
+                ) : (
+                  <span style={{ fontFamily: 'Patrick Hand', fontSize: '18px', color: 'var(--chalk-pink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    NEEDS IMPROVEMENT
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ flex: '1', minWidth: '300px' }}>
+            <div style={{ fontFamily: 'Patrick Hand', fontSize: '20px', color: 'var(--chalk-white)', borderBottom: '1.5px solid rgba(255,255,255,0.2)', marginBottom: '16px', display: 'inline-block' }}>Score Trend</div>
+            <div style={{ height: '220px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={scoreTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                  <XAxis dataKey="shortName" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Patrick Hand' }} axisLine={{ stroke: 'rgba(255,255,255,0.25)' }} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Patrick Hand' }} axisLine={{ stroke: 'rgba(255,255,255,0.25)' }} tickLine={false} />
+                  <Tooltip contentStyle={{ background: 'rgba(15,36,20,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontFamily: 'Patrick Hand', color: 'white' }} />
+                  <Area type="monotone" dataKey="score" stroke="rgba(255,245,100,0.78)" strokeWidth={2.5} fill="rgba(255,245,100,0.08)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+        
       </div>
+      
+      {/* AI Chat Button */}
+      <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{
+          width: '58px', height: '58px', borderRadius: '50%',
+          border: '2px solid rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.08)',
+          boxShadow: '0 0 12px rgba(255,255,255,0.15)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'
+        }} onClick={() => document.getElementById('chat-toggle-btn')?.click()}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--chalk-white)" stroke="none">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <circle cx="8" cy="10" r="1.5" fill="var(--chalk-bg)"></circle>
+            <circle cx="12" cy="10" r="1.5" fill="var(--chalk-bg)"></circle>
+            <circle cx="16" cy="10" r="1.5" fill="var(--chalk-bg)"></circle>
+          </svg>
+        </div>
+        <div style={{ fontFamily: 'Patrick Hand', color: 'rgba(255,255,255,0.55)', fontSize: '10px', marginTop: '4px' }}>AI Chat</div>
+      </div>
+      
       <ChatAssistant />
     </div>
   );

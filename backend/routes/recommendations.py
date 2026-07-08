@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import DimStudent, RawScores, RawAttendance, RawStudyLogs, StudentSkills, Recommendations
+from models import DimStudent, RawScores, RawAttendance, RawStudyLogs, StudentSkills, Recommendations, MsritScores
 from datetime import datetime
 
 router = APIRouter()
@@ -18,13 +18,17 @@ def get_recommendations(student_id: str, db: Session = Depends(get_db)):
     recommendations = []
 
     # Get data
+    msrit_scores = db.query(MsritScores).filter(MsritScores.student_id == student_id).all()
     scores     = db.query(RawScores).filter(RawScores.student_id == student_id).all()
     attendance = db.query(RawAttendance).filter(RawAttendance.student_id == student_id).all()
     logs       = db.query(RawStudyLogs).filter(RawStudyLogs.student_id == student_id).all()
     skills     = db.query(StudentSkills).filter(StudentSkills.student_id == student_id).all()
 
     # Calculate metrics
-    avg_score = round(sum(float(s.final_score or 0) for s in scores) / len(scores), 2) if scores else 0
+    if msrit_scores:
+        avg_score = round(sum(float(s.final_total or 0) for s in msrit_scores) / len(msrit_scores), 2) if msrit_scores else 0
+    else:
+        avg_score = round(sum(float(s.final_score or 0) for s in scores) / len(scores), 2) if scores else 0
     attendance_pct = round(
         (sum(a.classes_attended for a in attendance) /
          sum(a.total_classes for a in attendance)) * 100, 2

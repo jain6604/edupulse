@@ -35,9 +35,11 @@ def get_data_quality_overview(db: Session = Depends(get_db)):
         student_completeness = 100.0
     else:
         scores_st = set(r[0] for r in db.query(models.RawScores.student_id).distinct().all())
+        msrit_st = set(r[0] for r in db.query(models.MsritScores.student_id).distinct().all())
+        any_scores_st = scores_st.union(msrit_st)
         att_st = set(r[0] for r in db.query(models.RawAttendance.student_id).distinct().all())
         study_st = set(r[0] for r in db.query(models.RawStudyLogs.student_id).distinct().all())
-        complete_st = scores_st.intersection(att_st).intersection(study_st)
+        complete_st = any_scores_st.intersection(att_st).intersection(study_st)
         student_completeness = round((len(complete_st) / total_students) * 100, 2)
 
     # 4. Anomalies

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { submitScores, submitAttendance, runPipeline, getSubjectsByBranch, getSemesters, submitStudyLog, submitMsritScores } from '../services/api';
@@ -144,7 +144,7 @@ function InputPortal() {
     } finally { setLoading(false); }
   };
 
-  const calculateMsritPreview = () => {
+  const calculateMsritPreview = useCallback(() => {
     if (!msritForm.cie1_score || !msritForm.cie2_score || !msritForm.component1_score || !msritForm.component2_score) {
       return null;
     }
@@ -158,16 +158,15 @@ function InputPortal() {
       avg_cie: avgCie.toFixed(2),
       internal_total: internalTotal.toFixed(2)
     };
-  };
+  }, [msritForm]);
 
   useEffect(() => {
     setMsritPreview(calculateMsritPreview());
-  }, [msritForm]);
+  }, [calculateMsritPreview]);
 
   const labelStyle = {
-    fontSize: '12px', fontWeight: '600', color: '#64748b',
-    marginBottom: '8px', display: 'block',
-    letterSpacing: '0.5px', textTransform: 'uppercase'
+    fontSize: '16px', color: 'var(--chalk-dim)',
+    marginBottom: '4px', display: 'block', fontFamily: 'Patrick Hand'
   };
 
   const tabs = ['scores', 'attendance', 'study', 'msrit'];
@@ -175,53 +174,48 @@ function InputPortal() {
   return (
     <div className="page-wrapper" style={{ position: 'relative', minHeight: '100vh' }}>
       <PageBackground />
-      <div style={{ position: 'relative', zIndex: 1 }}>
-      <div className="aurora-bar" />
 
-      {/* Navbar */}
-      <nav className="navbar">
+      <nav className="navbar" style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '22px 32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
             width: '30px', height: '30px',
-            background: 'linear-gradient(135deg, #d4af62, #60a5fa)',
-            borderRadius: '8px', display: 'flex',
+            border: '1.5px dashed var(--chalk-yellow)', color: 'var(--chalk-yellow)',
+            borderRadius: '4px', display: 'flex',
             alignItems: 'center', justifyContent: 'center', fontSize: '14px'
           }}>⚡</div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: '800' }}>
-            <span className="glow-text">EduPulse</span>
+          <h1 style={{ fontFamily: 'Patrick Hand, cursive', fontSize: '24px', fontWeight: 'bold' }}>
+            EduPulse
           </h1>
         </div>
-        <button className="btn-secondary" style={{ padding: '7px 14px', fontSize: '13px' }}
-          onClick={() => navigate('/dashboard')}>
-          Back to Dashboard
-        </button>
+        <button className="btn-secondary" style={{ padding: '7px 14px', fontSize: '16px', fontFamily: 'Patrick Hand' }} onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
       </nav>
 
-      <div style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ padding: '40px', maxWidth: '600px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
         <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '26px', fontWeight: '800', letterSpacing: '-1px' }}>
+          <h2 style={{ fontFamily: 'Patrick Hand, cursive', fontSize: '36px', color: 'var(--chalk-white)' }}>
             Input Portal
           </h2>
-          <p style={{ color: '#475569', fontSize: '14px', marginTop: '4px' }}>
+          <p style={{ color: 'var(--chalk-dim)', fontSize: '18px', marginTop: '4px', fontFamily: 'Patrick Hand' }}>
             Enter your academic data — analytics update automatically.
           </p>
         </div>
 
         {/* Tabs */}
         <div style={{
-          display: 'flex', gap: '4px', flexWrap: 'wrap',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          padding: '4px', borderRadius: '10px', marginBottom: '24px'
+          display: 'flex', gap: '8px', flexWrap: 'wrap',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1.5px dashed var(--chalk-border)',
+          padding: '8px', borderRadius: '8px', marginBottom: '24px'
         }}>
           {tabs.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
-              flex: 1, padding: '9px', borderRadius: '8px', border: 'none',
-              background: activeTab === tab ? 'linear-gradient(135deg, #d4af62, #60a5fa)' : 'transparent',
-              color: activeTab === tab ? 'white' : '#475569',
-              fontWeight: '600', fontSize: '13px', cursor: 'pointer',
-              fontFamily: 'Space Grotesk, sans-serif', transition: 'all 0.2s',
+              flex: 1, padding: '12px', borderRadius: '4px', border: '1.5px dashed',
+              borderColor: activeTab === tab ? 'var(--chalk-yellow)' : 'transparent',
+              background: 'transparent',
+              color: activeTab === tab ? 'var(--chalk-yellow)' : 'var(--chalk-dim)',
+              fontSize: '18px', cursor: 'pointer',
+              fontFamily: 'Patrick Hand', transition: 'all 0.2s',
               textTransform: 'capitalize'
             }}>
               {tab === 'scores' ? 'Scores' : tab === 'attendance' ? 'Attendance' : tab === 'study' ? 'Study Log' : 'MSRIT Marks'}
@@ -232,58 +226,41 @@ function InputPortal() {
         {/* Messages */}
         {message && (
           <div style={{
-            background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)',
-            color: '#34d399', padding: '12px 16px', borderRadius: '8px',
-            marginBottom: '20px', fontSize: '13px'
+            background: 'transparent', border: '1.5px dashed var(--chalk-green)',
+            color: 'var(--chalk-green)', padding: '12px 16px', borderRadius: '4px',
+            marginBottom: '20px', fontSize: '18px', fontFamily: 'Patrick Hand'
           }}>{message}</div>
         )}
         {error && (
           <div style={{
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-            color: '#f87171', padding: '12px 16px', borderRadius: '8px',
-            marginBottom: '20px', fontSize: '13px'
+            background: 'transparent', border: '1.5px dashed var(--chalk-pink)',
+            color: 'var(--chalk-pink)', padding: '12px 16px', borderRadius: '4px',
+            marginBottom: '20px', fontSize: '18px', fontFamily: 'Patrick Hand'
           }}>{error}</div>
         )}
 
         {/* Scores Form */}
         {activeTab === 'scores' && (
-          <div className="card fade-in">
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '17px', fontWeight: '700', marginBottom: '24px' }}>
+          <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1.5px dashed var(--chalk-border)', borderRadius: '8px' }}>
+            <h3 style={{ fontFamily: 'Patrick Hand, cursive', fontSize: '24px', color: 'var(--chalk-white)', marginBottom: '24px' }}>
               Submit Scores
             </h3>
             <form onSubmit={handleScoreSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
                 <div>
                   <label style={labelStyle}>Subject</label>
-                  <select className="input-field"
-                    value={scoreForm.subject_id}
-                    onChange={e => setScoreForm({ ...scoreForm, subject_id: e.target.value })}
-                    required>
+                  <select className="input-field" value={scoreForm.subject_id} onChange={e => setScoreForm({ ...scoreForm, subject_id: e.target.value })} required>
                     <option value="">Select Subject</option>
-                    {subjects.map(s => (
-                      <option key={s.subject_id} value={s.subject_id}>
-                        {s.subject_name} ({s.branch})
-                      </option>
-                    ))}
+                    {subjects.map(s => <option key={s.subject_id} value={s.subject_id}>{s.subject_name} ({s.branch})</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label style={labelStyle}>Semester</label>
-                  <select className="input-field"
-                    value={scoreForm.semester_id}
-                    onChange={e => setScoreForm({ ...scoreForm, semester_id: e.target.value })}
-                    required>
+                  <select className="input-field" value={scoreForm.semester_id} onChange={e => setScoreForm({ ...scoreForm, semester_id: e.target.value })} required>
                     <option value="">Select Semester</option>
-                    {semesters.map(s => (
-                      <option key={s.semester_id} value={s.semester_id}>
-                        Semester {s.semester_no} — {s.academic_year} ({s.term})
-                      </option>
-                    ))}
+                    {semesters.map(s => <option key={s.semester_id} value={s.semester_id}>Semester {s.semester_no} — {s.academic_year} ({s.term})</option>)}
                   </select>
                 </div>
-
                 {[
                   { label: 'Assignment Score (0-100)', name: 'assignment_score' },
                   { label: 'Midterm Score (0-100)', name: 'midterm_score' },
@@ -291,17 +268,10 @@ function InputPortal() {
                 ].map(field => (
                   <div key={field.name}>
                     <label style={labelStyle}>{field.label}</label>
-                    <input className="input-field" type="number"
-                      name={field.name} min="0" max="100" placeholder="0 - 100"
-                      value={scoreForm[field.name]}
-                      onChange={e => setScoreForm({ ...scoreForm, [e.target.name]: e.target.value })}
-                      required />
+                    <input className="input-field" type="number" name={field.name} min="0" max="100" placeholder="0 - 100" value={scoreForm[field.name]} onChange={e => setScoreForm({ ...scoreForm, [e.target.name]: e.target.value })} required />
                   </div>
                 ))}
-
-                <button className="btn-primary" type="submit"
-                  style={{ width: '100%', padding: '13px', marginTop: '8px', borderRadius: '10px' }}
-                  disabled={loading}>
+                <button className="btn-primary" type="submit" style={{ width: '100%', padding: '13px', marginTop: '8px', fontSize: '18px' }} disabled={loading}>
                   {loading ? 'Saving...' : 'Save Scores'}
                 </button>
               </div>
@@ -311,60 +281,36 @@ function InputPortal() {
 
         {/* Attendance Form */}
         {activeTab === 'attendance' && (
-          <div className="card fade-in">
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '17px', fontWeight: '700', marginBottom: '24px' }}>
+          <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1.5px dashed var(--chalk-border)', borderRadius: '8px' }}>
+            <h3 style={{ fontFamily: 'Patrick Hand, cursive', fontSize: '24px', color: 'var(--chalk-white)', marginBottom: '24px' }}>
               Log Attendance
             </h3>
             <form onSubmit={handleAttendanceSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
                 <div>
                   <label style={labelStyle}>Subject</label>
-                  <select className="input-field"
-                    value={attendanceForm.subject_id}
-                    onChange={e => setAttendanceForm({ ...attendanceForm, subject_id: e.target.value })}
-                    required>
+                  <select className="input-field" value={attendanceForm.subject_id} onChange={e => setAttendanceForm({ ...attendanceForm, subject_id: e.target.value })} required>
                     <option value="">Select Subject</option>
-                    {subjects.map(s => (
-                      <option key={s.subject_id} value={s.subject_id}>
-                        {s.subject_name} ({s.branch})
-                      </option>
-                    ))}
+                    {subjects.map(s => <option key={s.subject_id} value={s.subject_id}>{s.subject_name} ({s.branch})</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label style={labelStyle}>Semester</label>
-                  <select className="input-field"
-                    value={attendanceForm.semester_id}
-                    onChange={e => setAttendanceForm({ ...attendanceForm, semester_id: e.target.value })}
-                    required>
+                  <select className="input-field" value={attendanceForm.semester_id} onChange={e => setAttendanceForm({ ...attendanceForm, semester_id: e.target.value })} required>
                     <option value="">Select Semester</option>
-                    {semesters.map(s => (
-                      <option key={s.semester_id} value={s.semester_id}>
-                        Semester {s.semester_no} — {s.academic_year} ({s.term})
-                      </option>
-                    ))}
+                    {semesters.map(s => <option key={s.semester_id} value={s.semester_id}>Semester {s.semester_no} — {s.academic_year} ({s.term})</option>)}
                   </select>
                 </div>
-
                 {[
                   { label: 'Classes Attended', name: 'classes_attended' },
                   { label: 'Total Classes Held', name: 'total_classes' },
                 ].map(field => (
                   <div key={field.name}>
                     <label style={labelStyle}>{field.label}</label>
-                    <input className="input-field" type="number"
-                      name={field.name} min="0" placeholder="Enter number"
-                      value={attendanceForm[field.name]}
-                      onChange={e => setAttendanceForm({ ...attendanceForm, [e.target.name]: e.target.value })}
-                      required />
+                    <input className="input-field" type="number" name={field.name} min="0" placeholder="Enter number" value={attendanceForm[field.name]} onChange={e => setAttendanceForm({ ...attendanceForm, [e.target.name]: e.target.value })} required />
                   </div>
                 ))}
-
-                <button className="btn-primary" type="submit"
-                  style={{ width: '100%', padding: '13px', marginTop: '8px', borderRadius: '10px' }}
-                  disabled={loading}>
+                <button className="btn-primary" type="submit" style={{ width: '100%', padding: '13px', marginTop: '8px', fontSize: '18px' }} disabled={loading}>
                   {loading ? 'Saving...' : 'Save Attendance'}
                 </button>
               </div>
@@ -374,42 +320,25 @@ function InputPortal() {
 
         {/* Study Log Form */}
         {activeTab === 'study' && (
-          <div className="card fade-in">
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '17px', fontWeight: '700', marginBottom: '24px' }}>
+          <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1.5px dashed var(--chalk-border)', borderRadius: '8px' }}>
+            <h3 style={{ fontFamily: 'Patrick Hand, cursive', fontSize: '24px', color: 'var(--chalk-white)', marginBottom: '24px' }}>
               Log Study Hours
             </h3>
             <form onSubmit={handleStudySubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
                 <div>
                   <label style={labelStyle}>Date</label>
-                  <input className="input-field" type="date"
-                    value={studyForm.log_date}
-                    onChange={e => setStudyForm({ ...studyForm, log_date: e.target.value })}
-                    required />
+                  <input className="input-field" type="date" value={studyForm.log_date} onChange={e => setStudyForm({ ...studyForm, log_date: e.target.value })} required />
                 </div>
-
                 <div>
                   <label style={labelStyle}>Hours Studied Today</label>
-                  <input className="input-field" type="number"
-                    min="0" max="24" step="0.5" placeholder="e.g. 4.5"
-                    value={studyForm.hours_studied}
-                    onChange={e => setStudyForm({ ...studyForm, hours_studied: e.target.value })}
-                    required />
+                  <input className="input-field" type="number" min="0" max="24" step="0.5" placeholder="e.g. 4.5" value={studyForm.hours_studied} onChange={e => setStudyForm({ ...studyForm, hours_studied: e.target.value })} required />
                 </div>
-
                 <div>
                   <label style={labelStyle}>Hours Slept Last Night</label>
-                  <input className="input-field" type="number"
-                    min="0" max="24" step="0.5" placeholder="e.g. 7"
-                    value={studyForm.sleep_hours}
-                    onChange={e => setStudyForm({ ...studyForm, sleep_hours: e.target.value })}
-                    required />
+                  <input className="input-field" type="number" min="0" max="24" step="0.5" placeholder="e.g. 7" value={studyForm.sleep_hours} onChange={e => setStudyForm({ ...studyForm, sleep_hours: e.target.value })} required />
                 </div>
-
-                <button className="btn-primary" type="submit"
-                  style={{ width: '100%', padding: '13px', marginTop: '8px', borderRadius: '10px' }}
-                  disabled={loading}>
+                <button className="btn-primary" type="submit" style={{ width: '100%', padding: '13px', marginTop: '8px', fontSize: '18px' }} disabled={loading}>
                   {loading ? 'Saving...' : 'Save Study Log'}
                 </button>
               </div>
@@ -419,118 +348,63 @@ function InputPortal() {
 
         {/* MSRIT Marks Form */}
         {activeTab === 'msrit' && (
-          <div className="card fade-in">
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '17px', fontWeight: '700', marginBottom: '24px' }}>
+          <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1.5px dashed var(--chalk-border)', borderRadius: '8px' }}>
+            <h3 style={{ fontFamily: 'Patrick Hand, cursive', fontSize: '24px', color: 'var(--chalk-white)', marginBottom: '24px' }}>
               Submit MSRIT Marks
             </h3>
             <form onSubmit={handleMsritSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
                 <div>
                   <label style={labelStyle}>Subject</label>
-                  <select className="input-field"
-                    value={msritForm.subject_id}
-                    onChange={e => setMsritForm({ ...msritForm, subject_id: e.target.value })}
-                    required>
+                  <select className="input-field" value={msritForm.subject_id} onChange={e => setMsritForm({ ...msritForm, subject_id: e.target.value })} required>
                     <option value="">Select Subject</option>
-                    {subjects.map(s => (
-                      <option key={s.subject_id} value={s.subject_id}>
-                        {s.subject_name} ({s.branch})
-                      </option>
-                    ))}
+                    {subjects.map(s => <option key={s.subject_id} value={s.subject_id}>{s.subject_name} ({s.branch})</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label style={labelStyle}>Semester</label>
-                  <select className="input-field"
-                    value={msritForm.semester_id}
-                    onChange={e => setMsritForm({ ...msritForm, semester_id: e.target.value })}
-                    required>
+                  <select className="input-field" value={msritForm.semester_id} onChange={e => setMsritForm({ ...msritForm, semester_id: e.target.value })} required>
                     <option value="">Select Semester</option>
-                    {semesters.map(s => (
-                      <option key={s.semester_id} value={s.semester_id}>
-                        Semester {s.semester_no} — {s.academic_year} ({s.term})
-                      </option>
-                    ))}
+                    {semesters.map(s => <option key={s.semester_id} value={s.semester_id}>Semester {s.semester_no} — {s.academic_year} ({s.term})</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label style={labelStyle}>CIE 1 Score (0-30)</label>
-                  <input className="input-field" type="number"
-                    min="0" max="30" placeholder="0 - 30"
-                    value={msritForm.cie1_score}
-                    onChange={e => {
-                      const v = e.target.value === '' ? '' : Math.max(0, Math.min(30, Number(e.target.value)));
-                      setMsritForm({ ...msritForm, cie1_score: v === '' ? '' : String(v) });
-                    }}
-                    required />
+                  <input className="input-field" type="number" min="0" max="30" placeholder="0 - 30" value={msritForm.cie1_score} onChange={e => { const v = e.target.value === '' ? '' : Math.max(0, Math.min(30, Number(e.target.value))); setMsritForm({ ...msritForm, cie1_score: v === '' ? '' : String(v) }); }} required />
                 </div>
-
                 <div>
                   <label style={labelStyle}>CIE 2 Score (0-30)</label>
-                  <input className="input-field" type="number"
-                    min="0" max="30" placeholder="0 - 30"
-                    value={msritForm.cie2_score}
-                    onChange={e => {
-                      const v = e.target.value === '' ? '' : Math.max(0, Math.min(30, Number(e.target.value)));
-                      setMsritForm({ ...msritForm, cie2_score: v === '' ? '' : String(v) });
-                    }}
-                    required />
+                  <input className="input-field" type="number" min="0" max="30" placeholder="0 - 30" value={msritForm.cie2_score} onChange={e => { const v = e.target.value === '' ? '' : Math.max(0, Math.min(30, Number(e.target.value))); setMsritForm({ ...msritForm, cie2_score: v === '' ? '' : String(v) }); }} required />
                 </div>
-
                 <div>
                   <label style={labelStyle}>Component 1 Score (0-10)</label>
-                  <input className="input-field" type="number"
-                    min="0" max="10" placeholder="0 - 10"
-                    value={msritForm.component1_score}
-                    onChange={e => {
-                      const v = e.target.value === '' ? '' : Math.max(0, Math.min(10, Number(e.target.value)));
-                      setMsritForm({ ...msritForm, component1_score: v === '' ? '' : String(v) });
-                    }}
-                    required />
+                  <input className="input-field" type="number" min="0" max="10" placeholder="0 - 10" value={msritForm.component1_score} onChange={e => { const v = e.target.value === '' ? '' : Math.max(0, Math.min(10, Number(e.target.value))); setMsritForm({ ...msritForm, component1_score: v === '' ? '' : String(v) }); }} required />
                 </div>
-
                 <div>
                   <label style={labelStyle}>Component 2 Score (0-10)</label>
-                  <input className="input-field" type="number"
-                    min="0" max="10" placeholder="0 - 10"
-                    value={msritForm.component2_score}
-                    onChange={e => {
-                      const v = e.target.value === '' ? '' : Math.max(0, Math.min(10, Number(e.target.value)));
-                      setMsritForm({ ...msritForm, component2_score: v === '' ? '' : String(v) });
-                    }}
-                    required />
+                  <input className="input-field" type="number" min="0" max="10" placeholder="0 - 10" value={msritForm.component2_score} onChange={e => { const v = e.target.value === '' ? '' : Math.max(0, Math.min(10, Number(e.target.value))); setMsritForm({ ...msritForm, component2_score: v === '' ? '' : String(v) }); }} required />
                 </div>
 
                 {/* Live Preview */}
                 {msritPreview && (
-                  <div style={{
-                    background: 'rgba(96,165,250,0.05)',
-                    border: '1px solid rgba(96,165,250,0.3)',
-                    padding: '16px', borderRadius: '8px',
-                    marginBottom: '16px'
-                  }}>
-                    <p style={{ fontSize: '12px', fontWeight: '600', color: '#60a5fa', marginBottom: '12px', textTransform: 'uppercase' }}>
+                  <div style={{ background: 'transparent', border: '1.5px dashed var(--chalk-cyan)', padding: '16px', borderRadius: '4px', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '16px', fontFamily: 'Patrick Hand', color: 'var(--chalk-cyan)', marginBottom: '12px' }}>
                       Live Preview
                     </p>
                     <div className="grid-2">
                       <div>
-                        <p style={{ fontSize: '11px', color: '#64748b' }}>Avg CIE</p>
-                        <p style={{ fontSize: '18px', fontWeight: '700', color: '#60a5fa' }}>{msritPreview.avg_cie}</p>
+                        <p style={{ fontSize: '14px', color: 'var(--chalk-dim)', fontFamily: 'Patrick Hand' }}>Avg CIE</p>
+                        <p style={{ fontSize: '24px', fontFamily: 'Caveat, cursive', color: 'var(--chalk-cyan)' }}>{msritPreview.avg_cie}</p>
                       </div>
                       <div>
-                        <p style={{ fontSize: '11px', color: '#64748b' }}>Internal Total /50</p>
-                        <p style={{ fontSize: '18px', fontWeight: '700', color: '#d4af62' }}>{msritPreview.internal_total}</p>
+                        <p style={{ fontSize: '14px', color: 'var(--chalk-dim)', fontFamily: 'Patrick Hand' }}>Internal Total /50</p>
+                        <p style={{ fontSize: '24px', fontFamily: 'Caveat, cursive', color: 'var(--chalk-yellow)' }}>{msritPreview.internal_total}</p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <button className="btn-primary" type="submit"
-                  style={{ width: '100%', padding: '13px', marginTop: '8px', borderRadius: '10px' }}
-                  disabled={loading}>
+                <button className="btn-primary" type="submit" style={{ width: '100%', padding: '13px', marginTop: '8px', fontSize: '18px' }} disabled={loading}>
                   {loading ? 'Saving...' : 'Save MSRIT Marks'}
                 </button>
               </div>
@@ -538,7 +412,6 @@ function InputPortal() {
           </div>
         )}
 
-      </div>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from database import SessionLocal
-from models import DimStudent, RawScores, RawAttendance, RawStudyLogs, StudentSkills, Achievements, PerformanceSummary, RiskScores
+from models import DimStudent, RawScores, RawAttendance, RawStudyLogs, StudentSkills, Achievements, PerformanceSummary, RiskScores, MsritScores, DimSubject
 from datetime import datetime
 
 def get_db():
@@ -28,6 +28,7 @@ def generate_report(student_id: str):
             return {"error": "Student not found"}
 
         # Get all data
+        msrit_scores = db.query(MsritScores).filter(MsritScores.student_id == student_id).all()
         scores      = db.query(RawScores).filter(RawScores.student_id == student_id).all()
         attendance  = db.query(RawAttendance).filter(RawAttendance.student_id == student_id).all()
         logs        = db.query(RawStudyLogs).filter(RawStudyLogs.student_id == student_id).all()
@@ -37,11 +38,14 @@ def generate_report(student_id: str):
         risk        = db.query(RiskScores).filter(RiskScores.student_id == student_id).first()
 
         # Calculate metrics
-        avg_score = round(sum(
-            float(s.assignment_score or 0)*0.2 +
-            float(s.midterm_score or 0)*0.3 +
-            float(s.final_score or 0)*0.5
-            for s in scores) / len(scores), 2) if scores else 0
+        if msrit_scores:
+            avg_score = round(sum(float(s.final_total or 0) for s in msrit_scores) / len(msrit_scores), 2) if msrit_scores else 0
+        else:
+            avg_score = round(sum(
+                float(s.assignment_score or 0)*0.2 +
+                float(s.midterm_score or 0)*0.3 +
+                float(s.final_score or 0)*0.5
+                for s in scores) / len(scores), 2) if scores else 0
 
         attendance_pct = round(
             (sum(a.classes_attended for a in attendance) /
@@ -145,7 +149,41 @@ def generate_report(student_id: str):
         content.append(Spacer(1, 20))
 
         # ---- SCORES BREAKDOWN ----
-        if scores:
+        if msrit_scores:
+            content.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e2e8f0')))
+            content.append(Spacer(1, 8))
+            content.append(Paragraph("Scores Breakdown (MSRIT Scheme)", section_style))
+            content.append(Spacer(1, 8))
+
+            score_data = [['Subject', 'CIE 1', 'CIE 2', 'Internals', 'SEE', 'Total']]
+            for s in msrit_scores:
+                subject = db.query(DimSubject).filter(DimSubject.subject_id == s.subject_id).first()
+                sub_name = subject.subject_name if subject else "Unknown"
+                score_data.append([
+                    sub_name,
+                    str(s.cie1_score or 0),
+                    str(s.cie2_score or 0),
+                    str(s.internal_total or 0),
+                    str(s.see_score or 'N/A'),
+                    str(s.final_total or 'N/A')
+                ])
+
+            score_table = Table(score_data, colWidths=[2.2*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 1.2*inch])
+            score_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+                ('FONTSIZE', (0,0), (-1,-1), 9),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+                ('PADDING', (0,0), (-1,-1), 6),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('ALIGN', (0,1), (0,-1), 'LEFT'),
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')]),
+            ]))
+            content.append(score_table)
+            content.append(Spacer(1, 20))
+        elif scores:
             content.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e2e8f0')))
             content.append(Spacer(1, 8))
             content.append(Paragraph("Scores Breakdown", section_style))

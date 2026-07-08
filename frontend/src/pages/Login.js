@@ -19,12 +19,10 @@ function Login() {
   };
 
   return (
-    <div className="page-wrapper" style={{ position: 'relative', background: '#03060f', minHeight: '100vh', display: 'flex',
+    <div className="page-wrapper" style={{ position: 'relative', minHeight: '100vh', display: 'flex',
       alignItems: 'center', justifyContent: 'center', padding: '20px'
     }}>
       <PageBackground />
-
-      
 
       <div style={{ width: '100%', maxWidth: '420px', position: 'relative', zIndex: 1 }}>
 
@@ -32,34 +30,35 @@ function Login() {
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
             width: '48px', height: '48px',
-            background: 'linear-gradient(135deg, #d4af62, #60a5fa)',
-            borderRadius: '12px', margin: '0 auto 16px',
+            border: '2px dashed var(--chalk-yellow)',
+            color: 'var(--chalk-yellow)',
+            borderRadius: '8px', margin: '0 auto 16px',
             display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: '22px'
+            justifyContent: 'center', fontSize: '24px'
           }}>
             ⚡
           </div>
           <h1 style={{
-            fontFamily: 'Syne, sans-serif',
-            fontSize: '22px', fontWeight: '800'
+            fontFamily: 'Patrick Hand, cursive',
+            fontSize: '36px', color: 'var(--chalk-white)'
           }}>
-            <span className="glow-text">EduPulse</span>
+            EduPulse
           </h1>
-          <p style={{ color: '#475569', fontSize: '14px', marginTop: '6px' }}>
+          <p style={{ color: 'var(--chalk-dim)', fontSize: '18px', marginTop: '6px', fontFamily: 'Patrick Hand' }}>
             AI-Powered Student Performance Analytics
           </p>
         </div>
 
-        {/* Card */}
-        <div className="card fade-up" style={{ padding: '32px' }}>
+        {/* Card equivalent - just a subtle background and dashed border */}
+        <div className="fade-up" style={{ padding: '32px', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--chalk-border)', borderRadius: '8px' }}>
 
           {error && (
             <div style={{
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.2)',
-              color: '#f87171', padding: '12px 16px',
-              borderRadius: '8px', marginBottom: '20px',
-              fontSize: '13px'
+              background: 'transparent',
+              borderBottom: '2px dashed var(--chalk-pink)',
+              color: 'var(--chalk-pink)', padding: '12px 16px',
+              marginBottom: '20px',
+              fontSize: '16px', fontFamily: 'Patrick Hand'
             }}>{error}</div>
           )}
 
@@ -68,10 +67,8 @@ function Login() {
 
               <div>
                 <label style={{
-                  fontSize: '12px', fontWeight: '600',
-                  color: '#64748b', marginBottom: '8px',
-                  display: 'block', letterSpacing: '0.5px',
-                  textTransform: 'uppercase'
+                  fontSize: '16px', color: 'var(--chalk-dim)', marginBottom: '4px',
+                  display: 'block', fontFamily: 'Patrick Hand'
                 }}>Email</label>
                 <input
                   className="input-field"
@@ -84,10 +81,8 @@ function Login() {
 
               <div>
                 <label style={{
-                  fontSize: '12px', fontWeight: '600',
-                  color: '#64748b', marginBottom: '8px',
-                  display: 'block', letterSpacing: '0.5px',
-                  textTransform: 'uppercase'
+                  fontSize: '16px', color: 'var(--chalk-dim)', marginBottom: '4px',
+                  display: 'block', fontFamily: 'Patrick Hand'
                 }}>Password</label>
                 <input
                   className="input-field"
@@ -97,14 +92,14 @@ function Login() {
                   onChange={handleChange} required
                 />
                 <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                  <span style={{ color: '#d4af62', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }} onClick={() => navigate('/reset-password')}>
+                  <span style={{ color: 'var(--chalk-yellow)', fontSize: '14px', cursor: 'pointer', fontFamily: 'Patrick Hand' }} onClick={() => navigate('/reset-password')}>
                     Forgot Password?
                   </span>
                 </div>
               </div>
 
               <button className="btn-primary" type="submit"
-                style={{ width: '100%', padding: '13px', fontSize: '14px', marginTop: '8px', borderRadius: '10px' }}
+                style={{ width: '100%', padding: '13px', fontSize: '18px', marginTop: '8px' }}
                 disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In →'}
               </button>
@@ -115,11 +110,11 @@ function Login() {
           <div style={{
             textAlign: 'center', marginTop: '24px',
             padding: '16px 0 0',
-            borderTop: '1px solid rgba(255,255,255,0.05)',
-            fontSize: '13px', color: '#475569'
+            borderTop: '1.5px solid var(--chalk-border)',
+            fontSize: '16px', color: 'var(--chalk-dim)', fontFamily: 'Patrick Hand'
           }}>
             Don't have an account?{' '}
-            <span style={{ color: '#e9d5a7', cursor: 'pointer', fontWeight: '600' }}
+            <span style={{ color: 'var(--chalk-yellow)', cursor: 'pointer' }}
               onClick={() => navigate('/register')}>
               Register
             </span>
