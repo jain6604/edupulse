@@ -2,6 +2,8 @@ import PageBackground from '../components/PageBackground';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { API_BASE } from '../services/api';
+
 function AdminDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -9,7 +11,7 @@ function AdminDashboard() {
 
   const fetchData = useCallback(async (token) => {
     try {
-      const res = await fetch('http://localhost:8000/api/students/admin/overview', {
+      const res = await fetch(`${API_BASE}/students/admin/overview`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();

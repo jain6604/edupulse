@@ -2,7 +2,7 @@ import PageBackground from '../components/PageBackground';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getStudent, getAnalytics, getCGPA, getSkills, getAchievements, getSubjectPerformance } from '../services/api';
+import { getStudent, getAnalytics, getCGPA, getSkills, getAchievements, getSubjectPerformance, API_BASE } from '../services/api';
 
 function Profile() {
   const { student } = useAuth();
@@ -41,9 +41,9 @@ function Profile() {
 
       // Check if photo exists
       try {
-        const photoCheck = await fetch(`http://localhost:8000/api/students/${student.student_id}/photo`, { method: 'HEAD' });
+        const photoCheck = await fetch(`${API_BASE}/students/${student.student_id}/photo`, { method: 'HEAD' });
         if (photoCheck.ok) {
-          setPhotoUrl(`http://localhost:8000/api/students/${student.student_id}/photo?t=${Date.now()}`);
+          setPhotoUrl(`${API_BASE}/students/${student.student_id}/photo?t=${Date.now()}`);
         } else {
           setPhotoUrl(null);
         }
@@ -53,11 +53,11 @@ function Profile() {
 
       // Check if resume exists
       try {
-        const resumeCheck = await fetch(`http://localhost:8000/api/students/${student.student_id}/resume`, { method: 'HEAD' });
+        const resumeCheck = await fetch(`${API_BASE}/students/${student.student_id}/resume`, { method: 'HEAD' });
         if (resumeCheck.ok) {
           setResumeData({
             filename: 'resume.pdf',
-            url: `http://localhost:8000/api/students/${student.student_id}/resume?t=${Date.now()}`
+            url: `${API_BASE}/students/${student.student_id}/resume?t=${Date.now()}`
           });
         } else {
           setResumeData(null);
@@ -84,12 +84,12 @@ function Profile() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`http://localhost:8000/api/students/${student.student_id}/upload-photo`, {
+      const res = await fetch(`${API_BASE}/students/${student.student_id}/upload-photo`, {
         method: 'POST',
         body: formData,
       });
       if (res.ok) {
-        setPhotoUrl(`http://localhost:8000/api/students/${student.student_id}/photo?t=${Date.now()}`);
+        setPhotoUrl(`${API_BASE}/students/${student.student_id}/photo?t=${Date.now()}`);
       }
     } catch (err) {
       console.error(err);
@@ -105,13 +105,13 @@ function Profile() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`http://localhost:8000/api/students/${student.student_id}/upload-resume`, {
+      const res = await fetch(`${API_BASE}/students/${student.student_id}/upload-resume`, {
         method: 'POST',
         body: formData,
       });
       if (res.ok) {
         const data = await res.json();
-        setResumeData({ filename: data.filename || file.name, url: `http://localhost:8000/api/students/${student.student_id}/resume?t=${Date.now()}` });
+        setResumeData({ filename: data.filename || file.name, url: `${API_BASE}/students/${student.student_id}/resume?t=${Date.now()}` });
         setToastMessage('Resume uploaded successfully!');
         setTimeout(() => setToastMessage(null), 3000);
       }
@@ -291,7 +291,7 @@ function Profile() {
             <button className="btn-primary" style={{ width: '100%', padding: '14px 18px', fontSize: '18px' }} onClick={() => navigate('/dashboard')}>Go to Dashboard</button>
             <button className="btn-secondary" style={{ width: '100%', padding: '14px 18px', fontSize: '18px' }} onClick={() => navigate('/input')}>Add Data</button>
             <button className="btn-secondary" style={{ width: '100%', padding: '14px 18px', fontSize: '18px' }} onClick={() => navigate('/placement')}>View Placement</button>
-            <a href={`http://localhost:8000/api/reports/${student.student_id}`} target="_blank" rel="noreferrer" className="btn-primary" style={{ textAlign: 'center', display: 'inline-block', width: '100%', padding: '14px 18px', textDecoration: 'none', fontSize: '18px', boxSizing: 'border-box' }}>Download PDF Report</a>
+            <a href={`${API_BASE}/reports/${student.student_id}`} target="_blank" rel="noreferrer" className="btn-primary" style={{ textAlign: 'center', display: 'inline-block', width: '100%', padding: '14px 18px', textDecoration: 'none', fontSize: '18px', boxSizing: 'border-box' }}>Download PDF Report</a>
           </div>
         </div>
       </main>

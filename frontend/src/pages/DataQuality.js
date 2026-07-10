@@ -2,6 +2,8 @@ import PageBackground from '../components/PageBackground';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { API_BASE } from '../services/api';
+
 function DataQuality() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -19,7 +21,7 @@ function DataQuality() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/data-quality/overview');
+      const res = await fetch(`${API_BASE}/data-quality/overview`);
       const json = await res.json();
       setData(json);
     } catch (err) {
@@ -32,7 +34,7 @@ function DataQuality() {
   const handleRunPipeline = async () => {
     setRunningPipeline(true);
     try {
-      await fetch('http://localhost:8000/api/analytics/pipeline/run', { method: 'POST' });
+      await fetch(`${API_BASE}/analytics/pipeline/run`, { method: 'POST' });
       await fetchData();
     } catch (err) {
       console.error(err);

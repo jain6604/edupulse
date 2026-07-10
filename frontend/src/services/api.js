@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+export const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:8000'
   : 'https://edupulse-backend-k66t.onrender.com';
-const API_BASE = `${BASE_URL}/api`;
+export const API_BASE = `${BASE_URL}/api`;
 
 const api = axios.create({
   baseURL: API_BASE,
