@@ -133,36 +133,6 @@ def shutdown_event():
 def get_pipeline_status():
     return pipeline_status
 
-@app.get("/api/diagnostic")
-def diagnostic():
-    from database import SessionLocal
-    from sqlalchemy import text
-    db = SessionLocal()
-    try:
-        db.execute(text("SELECT 1"))
-        db_status = "Connected"
-    except Exception as e:
-        db_status = f"Failed: {str(e)}"
-        
-    try:
-        columns = db.execute(text("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'dim_student'")).fetchall()
-        student_cols = {col[0]: col[1] for col in columns}
-    except Exception as e:
-        student_cols = f"Failed: {str(e)}"
-        
-    try:
-        from models import DimStudent
-        student_count = db.query(DimStudent).count()
-    except Exception as e:
-        student_count = f"Failed: {str(e)}"
-
-    db.close()
-    return {
-        "database_status": db_status,
-        "dim_student_columns": student_cols,
-        "student_count": student_count
-    }
-
 @app.get("/")
 def root():
     return {"message": "EduPulse API is running 🚀"}

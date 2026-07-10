@@ -77,11 +77,10 @@ def register(student: StudentCreate, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        err_msg = f"Registration error: {str(e)}\n{traceback.format_exc()}"
-        print(err_msg)
+        print(f"Registration error: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=err_msg
+            detail="Registration database error. Please try again."
         )
 
 # ============================================
