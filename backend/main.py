@@ -23,9 +23,13 @@ app = FastAPI(
 # Allow React frontend to talk to this backend
 app.add_middleware(
     CORSMiddleware,
-    # Allow local frontend origins during development
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_origin_regex=r"^http://localhost(:[0-9]+)?$",
+    # Allow local frontend origins and live/preview Vercel origins
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://edupulse-sandy-nu.vercel.app"
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
