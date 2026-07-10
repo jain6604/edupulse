@@ -121,229 +121,232 @@ def hash_password(password):
 # ============================================
 # MAIN SEEDING
 # ============================================
-print("Starting EduPulse seed script...")
+def seed_data_func(db):
+    random.seed(42)
+    # We will assign semester dynamically per student based on join year
+    def get_current_semester_number(join_year):
+        # e.g. 2022 join -> 2026 is 4th year -> semester 7 (odd sem)
+        return (2026 - join_year) * 2 - 1
 
-# We will assign semester dynamically per student based on join year
-def get_current_semester_number(join_year):
-    # e.g. 2022 join -> 2026 is 4th year -> semester 7 (odd sem)
-    return (2026 - join_year) * 2 - 1
+    created_students = []
+    skipped = 0
 
-created_students = []
-skipped = 0
+    for s_data in students_data:
+        # Check if already exists
+        existing = db.query(DimStudent).filter(DimStudent.usn == s_data["usn"]).first()
+        if existing:
+            print(f"Skipping {s_data['name']} — already exists")
+            skipped += 1
+            created_students.append((existing, s_data["category"], s_data["branch"]))
+            continue
 
-for s_data in students_data:
-    # Check if already exists
-    existing = db.query(DimStudent).filter(DimStudent.usn == s_data["usn"]).first()
-    if existing:
-        print(f"Skipping {s_data['name']} — already exists")
-        skipped += 1
-        created_students.append((existing, s_data["category"], s_data["branch"]))
-        continue
-
-    email = f"{s_data['name'].split()[0].lower()}.{s_data['usn'].lower()}@msrit.edu"
-    student = DimStudent(
-        student_id=uuid.uuid4(),
-        name=s_data["name"],
-        email=email,
-        password_hash=hash_password("Student@123"),
-        branch=s_data["branch"],
-        hostel=s_data["hostel"],
-        year_of_joining=s_data["year"],
-        usn=s_data["usn"],
-        college="MS Ramaiah Institute of Technology"
-    )
-    db.add(student)
-    db.commit()
-    db.refresh(student)
-    created_students.append((student, s_data["category"], s_data["branch"]))
-    print(f"Created: {s_data['name']} ({s_data['branch']}) — {s_data['category']}")
-
-print(f"\nStudents created: {len(created_students) - skipped}, Skipped: {skipped}")
-
-# ============================================
-# SCORES, ATTENDANCE, LOGS, SKILLS, ACHIEVEMENTS
-# ============================================
-for student, category, branch in created_students:
-    ranges = score_ranges[category]
-
-    current_sem_num = get_current_semester_number(student.year_of_joining)
-    semester = db.query(DimSemester).filter(DimSemester.semester_no == current_sem_num).first()
-    if not semester:
-        semester = db.query(DimSemester).first()
-
-    # Get subjects for this branch and semester
-    if current_sem_num <= 2:
-        subjects = db.query(DimSubject).filter(
-            DimSubject.branch == 'COMMON',
-            DimSubject.semester_number == current_sem_num
-        ).all()
-    else:
-        subjects = db.query(DimSubject).filter(
-            DimSubject.branch == branch,
-            DimSubject.semester_number == current_sem_num
-        ).all()
-
-    if not subjects:
-        print(f"No subjects found for {branch} sem {current_sem_num}")
-        continue
-
-    # Insert MSRIT scores
-    existing_scores = db.query(MsritScores).filter(
-        MsritScores.student_id == student.student_id
-    ).first()
-
-    if not existing_scores:
-        for subject in subjects:
-            cie1 = round(random.uniform(*ranges["cie"]), 1)
-            cie2 = round(random.uniform(*ranges["cie"]), 1)
-            comp1 = round(random.uniform(*ranges["comp"]), 1)
-            comp2 = round(random.uniform(*ranges["comp"]), 1)
-            see = round(random.uniform(*ranges["see"]), 1)
-
-            avg_cie = round((cie1 + cie2) / 2, 2)
-            internal = round(avg_cie + comp1 + comp2, 2)
-            see_conv = round(see / 2, 2)
-            final = round(internal + see_conv, 2)
-
-            score = MsritScores(
-                student_id=student.student_id,
-                subject_id=subject.subject_id,
-                semester_id=semester.semester_id,
-                cie1_score=cie1,
-                cie2_score=cie2,
-                component1_score=comp1,
-                component2_score=comp2,
-                avg_cie=avg_cie,
-                internal_total=internal,
-                see_score=see,
-                see_converted=see_conv,
-                final_total=final
-            )
-            db.add(score)
+        email = f"{s_data['name'].split()[0].lower()}.{s_data['usn'].lower()}@msrit.edu"
+        student = DimStudent(
+            student_id=uuid.uuid4(),
+            name=s_data["name"],
+            email=email,
+            password_hash=hash_password("Student@123"),
+            branch=s_data["branch"],
+            hostel=s_data["hostel"],
+            year_of_joining=s_data["year"],
+            usn=s_data["usn"],
+            college="MS Ramaiah Institute of Technology"
+        )
+        db.add(student)
         db.commit()
+        db.refresh(student)
+        created_students.append((student, s_data["category"], s_data["branch"]))
+        print(f"Created: {s_data['name']} ({s_data['branch']}) — {s_data['category']}")
 
-    # Insert attendance for 3 subjects
-    existing_att = db.query(RawAttendance).filter(
-        RawAttendance.student_id == student.student_id
-    ).first()
+    print(f"\nStudents created: {len(created_students) - skipped}, Skipped: {skipped}")
 
-    if not existing_att:
-        att_range = attendance_ranges[category]
-        for subject in subjects[:3]:
-            att = RawAttendance(
-                student_id=student.student_id,
-                subject_id=subject.subject_id,
-                semester_id=semester.semester_id,
-                classes_attended=random.randint(*att_range),
-                total_classes=50
-            )
-            db.add(att)
-        db.commit()
+    # ============================================
+    # SCORES, ATTENDANCE, LOGS, SKILLS, ACHIEVEMENTS
+    # ============================================
+    for student, category, branch in created_students:
+        ranges = score_ranges[category]
 
-    # Insert study logs for 14 days
-    existing_logs = db.query(RawStudyLogs).filter(
-        RawStudyLogs.student_id == student.student_id
-    ).first()
+        current_sem_num = get_current_semester_number(student.year_of_joining)
+        semester = db.query(DimSemester).filter(DimSemester.semester_no == current_sem_num).first()
+        if not semester:
+            semester = db.query(DimSemester).first()
 
-    if not existing_logs:
-        study_range = study_ranges[category]
-        for i in range(14):
-            log_date = date.today() - timedelta(days=i)
-            log = RawStudyLogs(
-                student_id=student.student_id,
-                log_date=log_date,
-                hours_studied=round(random.uniform(*study_range["study"]), 1),
-                sleep_hours=round(random.uniform(*study_range["sleep"]), 1)
-            )
-            db.add(log)
-        db.commit()
+        # Get subjects for this branch and semester
+        if current_sem_num <= 2:
+            subjects = db.query(DimSubject).filter(
+                DimSubject.branch == 'COMMON',
+                DimSubject.semester_number == current_sem_num
+            ).all()
+        else:
+            subjects = db.query(DimSubject).filter(
+                DimSubject.branch == branch,
+                DimSubject.semester_number == current_sem_num
+            ).all()
 
-    # Insert skills
-    existing_skills = db.query(StudentSkills).filter(
-        StudentSkills.student_id == student.student_id
-    ).first()
+        if not subjects:
+            print(f"No subjects found for {branch} sem {current_sem_num}")
+            continue
 
-    if not existing_skills:
-        count_range = skills_count[category]
-        count = random.randint(*count_range)
-        branch_skills = skills_pool.get(branch, skills_pool["CSE"])
-        selected_skills = random.sample(branch_skills, min(count, len(branch_skills)))
-        for skill in selected_skills:
-            proficiency_ranges = {
-                "topper": (7, 10),
-                "average": (5, 8),
-                "below_average": (3, 6),
-                "struggling": (2, 5)
-            }
-            prof_range = proficiency_ranges[category]
-            sk = StudentSkills(
-                student_id=student.student_id,
-                skill_name=skill,
-                proficiency=random.randint(*prof_range)
-            )
-            db.add(sk)
-        db.commit()
+        # Insert MSRIT scores
+        existing_scores = db.query(MsritScores).filter(
+            MsritScores.student_id == student.student_id
+        ).first()
 
-    # Insert achievements
-    existing_ach = db.query(Achievements).filter(
-        Achievements.student_id == student.student_id
-    ).first()
+        if not existing_scores:
+            for subject in subjects:
+                cie1 = round(random.uniform(*ranges["cie"]), 1)
+                cie2 = round(random.uniform(*ranges["cie"]), 1)
+                comp1 = round(random.uniform(*ranges["comp"]), 1)
+                comp2 = round(random.uniform(*ranges["comp"]), 1)
+                see = round(random.uniform(*ranges["see"]), 1)
 
-    if not existing_ach:
-        count_range = achievements_count[category]
-        count = random.randint(*count_range)
-        if count > 0:
-            selected = random.sample(achievements_pool, min(count, len(achievements_pool)))
-            for ach in selected:
-                a = Achievements(
+                avg_cie = round((cie1 + cie2) / 2, 2)
+                internal = round(avg_cie + comp1 + comp2, 2)
+                see_conv = round(see / 2, 2)
+                final = round(internal + see_conv, 2)
+
+                score = MsritScores(
                     student_id=student.student_id,
-                    type=ach["type"],
-                    title=ach["title"],
-                    date=str(date.today() - timedelta(days=random.randint(30, 365)))
+                    subject_id=subject.subject_id,
+                    semester_id=semester.semester_id,
+                    cie1_score=cie1,
+                    cie2_score=cie2,
+                    component1_score=comp1,
+                    component2_score=comp2,
+                    avg_cie=avg_cie,
+                    internal_total=internal,
+                    see_score=see,
+                    see_converted=see_conv,
+                    final_total=final
                 )
-                db.add(a)
+                db.add(score)
             db.commit()
 
-print("\nAll data inserted successfully!")
+        # Insert attendance for 3 subjects
+        existing_att = db.query(RawAttendance).filter(
+            RawAttendance.student_id == student.student_id
+        ).first()
 
-# ============================================
-# TRIGGER ETL PIPELINE
-# ============================================
-print("\nTriggering ETL pipeline...")
-try:
-    from pipeline.etl import run_pipeline
-    from pipeline_state import set_pipeline_status
-    run_pipeline()
-    set_pipeline_status("Success")
-    print("ETL: Pipeline completed successfully")
-except Exception as e:
-    print(f"ETL error: {e}")
+        if not existing_att:
+            att_range = attendance_ranges[category]
+            for subject in subjects[:3]:
+                att = RawAttendance(
+                    student_id=student.student_id,
+                    subject_id=subject.subject_id,
+                    semester_id=semester.semester_id,
+                    classes_attended=random.randint(*att_range),
+                    total_classes=50
+                )
+                db.add(att)
+            db.commit()
 
-# ============================================
-# TRIGGER ML PREDICTIONS
-# ============================================
-print("\nRunning ML predictions for all students...")
-from pipeline.predictor import predict_student
-for student, category, branch in created_students:
+        # Insert study logs for 14 days
+        existing_logs = db.query(RawStudyLogs).filter(
+            RawStudyLogs.student_id == student.student_id
+        ).first()
+
+        if not existing_logs:
+            study_range = study_ranges[category]
+            for i in range(14):
+                log_date = date.today() - timedelta(days=i)
+                log = RawStudyLogs(
+                    student_id=student.student_id,
+                    log_date=log_date,
+                    hours_studied=round(random.uniform(*study_range["study"]), 1),
+                    sleep_hours=round(random.uniform(*study_range["sleep"]), 1)
+                )
+                db.add(log)
+            db.commit()
+
+        # Insert skills
+        existing_skills = db.query(StudentSkills).filter(
+            StudentSkills.student_id == student.student_id
+        ).first()
+
+        if not existing_skills:
+            count_range = skills_count[category]
+            count = random.randint(*count_range)
+            branch_skills = skills_pool.get(branch, skills_pool["CSE"])
+            selected_skills = random.sample(branch_skills, min(count, len(branch_skills)))
+            for skill in selected_skills:
+                proficiency_ranges = {
+                    "topper": (7, 10),
+                    "average": (5, 8),
+                    "below_average": (3, 6),
+                    "struggling": (2, 5)
+                }
+                prof_range = proficiency_ranges[category]
+                sk = StudentSkills(
+                    student_id=student.student_id,
+                    skill_name=skill,
+                    proficiency=random.randint(*prof_range)
+                )
+                db.add(sk)
+            db.commit()
+
+        # Insert achievements
+        existing_ach = db.query(Achievements).filter(
+            Achievements.student_id == student.student_id
+        ).first()
+
+        if not existing_ach:
+            count_range = achievements_count[category]
+            count = random.randint(*count_range)
+            if count > 0:
+                selected = random.sample(achievements_pool, min(count, len(achievements_pool)))
+                for ach in selected:
+                    a = Achievements(
+                        student_id=student.student_id,
+                        type=ach["type"],
+                        title=ach["title"],
+                        date=str(date.today() - timedelta(days=random.randint(30, 365)))
+                    )
+                    db.add(a)
+                db.commit()
+
+    print("\nAll data inserted successfully!")
+
+    # ============================================
+    # TRIGGER ETL PIPELINE
+    # ============================================
+    print("\nTriggering ETL pipeline...")
     try:
-        pred = predict_student(str(student.student_id))
-        print(f"{student.name}: GPA={pred.get('predicted_gpa', 'N/A')} Risk={pred.get('predicted_risk', 'N/A')}")
+        from pipeline.etl import run_pipeline
+        from pipeline_state import set_pipeline_status
+        run_pipeline()
+        set_pipeline_status("Success")
+        print("ETL: Pipeline completed successfully")
     except Exception as e:
-        print(f"Prediction error for {student.name}: {e}")
+        print(f"ETL error: {e}")
 
-# ============================================
-# SUMMARY
-# ============================================
-print("\n===== SEEDING SUMMARY =====")
-from collections import Counter
-branches = [b for _, _, b in created_students]
-categories = [c for _, c, _ in created_students]
-print(f"Total students: {len(created_students)}")
-for branch, count in Counter(branches).items():
-    print(f"  {branch}: {count} students")
-print("\nBy performance:")
-for cat, count in Counter(categories).items():
-    print(f"  {cat}: {count} students")
+    # ============================================
+    # TRIGGER ML PREDICTIONS
+    # ============================================
+    print("\nRunning ML predictions for all students...")
+    from pipeline.predictor import predict_student
+    for student, category, branch in created_students:
+        try:
+            pred = predict_student(str(student.student_id))
+            print(f"{student.name}: GPA={pred.get('predicted_gpa', 'N/A')} Risk={pred.get('predicted_risk', 'N/A')}")
+        except Exception as e:
+            print(f"Prediction error for {student.name}: {e}")
 
-db.close()
-print("\nDone! EduPulse is ready with 20 MSRIT students.")
+    # ============================================
+    # SUMMARY
+    # ============================================
+    print("\n===== SEEDING SUMMARY =====")
+    from collections import Counter
+    branches = [b for _, _, b in created_students]
+    categories = [c for _, c, _ in created_students]
+    print(f"Total students: {len(created_students)}")
+    for branch, count in Counter(branches).items():
+        print(f"  {branch}: {count} students")
+    print("\nBy performance:")
+    for cat, count in Counter(categories).items():
+        print(f"  {cat}: {count} students")
+
+if __name__ == "__main__":
+    print("Starting EduPulse seed script...")
+    seed_data_func(db)
+    db.close()
+    print("\nDone! EduPulse is ready with 20 MSRIT students.")
