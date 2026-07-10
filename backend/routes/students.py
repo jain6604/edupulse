@@ -39,30 +39,42 @@ def create_token(data: dict):
 # ============================================
 @router.post("/register", response_model=StudentResponse)
 def register(student: StudentCreate, db: Session = Depends(get_db)):
-    # Check if email already exists
-    existing = db.query(DimStudent).filter(DimStudent.email == student.email).first()
-    if existing:
-        if existing.name.strip().lower() == student.name.strip().lower():
-            raise HTTPException(status_code=400, detail="A user with this exact name and email is already registered")
-        raise HTTPException(status_code=400, detail="This email is already registered to another user")
+    import traceback
+    try:
+        # Check if email already exists
+        existing = db.query(DimStudent).filter(DimStudent.email == student.email).first()
+        if existing:
+            if existing.name.strip().lower() == student.name.strip().lower():
+                raise HTTPException(status_code=400, detail="A user with this exact name and email is already registered")
+            raise HTTPException(status_code=400, detail="This email is already registered to another user")
 
-    # Handle empty string USN
-    usn_val = student.usn if student.usn and student.usn.strip() != "" else None
+        # Handle empty string USN
+        usn_val = student.usn if student.usn and student.usn.strip() != "" else None
 
-    # Hash password and save
-    new_student = DimStudent(
-        name=student.name,
-        email=student.email,
-        password_hash=hash_password(student.password),
-        branch=student.branch,
-        hostel=student.hostel,
-        year_of_joining=student.year_of_joining,
-        usn=usn_val
-    )
-    db.add(new_student)
-    db.commit()
-    db.refresh(new_student)
-    return new_student
+        # Hash password and save
+        new_student = DimStudent(
+            name=student.name,
+            email=student.email,
+            password_hash=hash_password(student.password),
+            branch=student.branch,
+            hostel=student.hostel,
+            year_of_joining=student.year_of_joining,
+            usn=usn_val
+        )
+        db.add(new_student)
+        db.commit()
+        db.refresh(new_student)
+        return new_student
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        err_msg = f"Registration error: {str(e)}\n{traceback.format_exc()}"
+        print(err_msg)
+        raise HTTPException(
+            status_code=500,
+            detail=err_msg
+        )
 
 # ============================================
 # LOGIN
