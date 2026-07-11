@@ -37,6 +37,32 @@ function AdminDashboard() {
     navigate('/admin-login');
   };
 
+  const handleDeleteStudent = async (studentId, studentName) => {
+    const confirmDelete = window.confirm(`Are you sure you want to permanently delete the account of ${studentName}? This will remove all of their academic data, scores, and ML prediction history.`);
+    if (!confirmDelete) return;
+
+    const token = localStorage.getItem('admin_token');
+    try {
+      const res = await fetch(`${API_BASE}/students/${studentId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (res.ok) {
+        alert("Student account deleted successfully.");
+        fetchData(token);
+      } else {
+        const errJson = await res.json();
+        alert(`Error deleting student: ${errJson.detail || 'Server error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error contacting the server.");
+    }
+  };
+
   if (loading) return (
     <div style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <PageBackground />
@@ -160,7 +186,7 @@ function AdminDashboard() {
               <tr style={{
                 borderBottom: '1.5px dashed var(--chalk-border)'
               }}>
-                {['USN', 'Branch', 'Year of Joining', 'Date Joined'].map(h => (
+                {['Name', 'Email', 'USN', 'Branch', 'Year of Joining', 'Date Joined', 'Actions'].map(h => (
                   <th key={h} style={{
                     padding: '14px 20px', textAlign: 'left',
                     fontSize: '16px', fontFamily: 'Patrick Hand',
@@ -176,6 +202,8 @@ function AdminDashboard() {
                   borderBottom: '1px dashed var(--chalk-border)',
                   transition: 'background 0.2s'
                 }}>
+                  <td style={{ padding: '14px 20px', fontSize: '18px', fontFamily: 'Patrick Hand', color: 'var(--chalk-white)' }}>{s.name}</td>
+                  <td style={{ padding: '14px 20px', fontSize: '18px', fontFamily: 'Patrick Hand', color: 'var(--chalk-dim)' }}>{s.email}</td>
                   <td style={{ padding: '14px 20px', fontSize: '18px', fontFamily: 'Patrick Hand', color: 'var(--chalk-white)' }}>
                     {s.usn && s.usn !== 'Not provided' ? (
                       <span style={{
@@ -190,6 +218,23 @@ function AdminDashboard() {
                   <td style={{ padding: '14px 20px', fontSize: '18px', fontFamily: 'Patrick Hand', color: 'var(--chalk-dim)' }}>{s.branch}</td>
                   <td style={{ padding: '14px 20px', fontSize: '18px', fontFamily: 'Patrick Hand', color: 'var(--chalk-dim)' }}>{s.year_of_joining}</td>
                   <td style={{ padding: '14px 20px', fontSize: '18px', fontFamily: 'Patrick Hand', color: 'var(--chalk-dim)' }}>{s.joined_on}</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <button
+                      onClick={() => handleDeleteStudent(s.student_id, s.name)}
+                      style={{
+                        background: 'transparent',
+                        border: '1px dashed var(--chalk-pink)',
+                        color: 'var(--chalk-pink)',
+                        padding: '4px 10px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontFamily: 'Patrick Hand'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

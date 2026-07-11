@@ -300,13 +300,64 @@ def delete_resume(student_id: str):
 def admin_overview(db: Session = Depends(get_db)):
     students = db.query(DimStudent).all()
     total = len(students)
-    # Return only non-sensitive fields
     student_list = []
     for s in students:
         student_list.append({
+            "student_id": str(s.student_id),
+            "name": s.name,
+            "email": s.email,
             "usn": s.usn,
             "branch": s.branch,
             "year_of_joining": s.year_of_joining,
-            "date_joined": s.created_at
+            "joined_on": s.created_at.strftime("%Y-%m-%d") if s.created_at else "N/A"
         })
     return {"total_students": total, "students": student_list}
+
+@router.delete("/{student_id}")
+def delete_student(student_id: str, db: Session = Depends(get_db)):
+    import uuid
+    try:
+        student_uuid = uuid.UUID(student_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid student ID format")
+    
+    student = db.query(DimStudent).filter(DimStudent.student_id == student_uuid).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Delete associated records in dependent tables to maintain FK integrity
+    from models import (
+        RawScores, RawAttendance, RawStudyLogs, RawSkills, StudentSkills, 
+        Achievements, RiskScores, Recommendations, PlacementScores, 
+        PerformanceSummary, StagingScores, StagingAttendance, 
+        StagingStudyLogs, StagingSkills
+    )
+    
+    models_to_delete = [
+        RawScores, RawAttendance, RawStudyLogs, RawSkills, StudentSkills, 
+        Achievements, RiskScores, Recommendations, PlacementScores, 
+        PerformanceSummary, StagingScores, StagingAttendance, 
+        StagingStudyLogs, StagingSkills
+    ]
+    
+    try:
+        for model in models_to_delete:
+            db.query(model).filter(model.student_id == student_uuid).delete(synchronize_session=False)
+            
+        # Also clean up any static uploaded files
+        for ext in ["jpg", "jpeg", "png"]:
+            photo_path = f"uploads/photos/{student_id}.{ext}"
+            if os.path.exists(photo_path):
+                os.remove(photo_path)
+        resume_path = f"uploads/resumes/{student_id}.pdf"
+        if os.path.exists(resume_path):
+            os.remove(resume_path)
+            
+        # Finally delete the student record
+        db.delete(student)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error during deletion: {str(e)}")
+        
+    return {"message": "Student account deleted successfully"}
