@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
-    print(f"GEMINI_API_KEY loaded: {GEMINI_API_KEY[:8]}...")
+    logger.info("Gemini API key is configured.")
 else:
-    raise RuntimeError("Gemini API key is missing or empty. Please configure GEMINI_API_KEY in .env")
+    logger.warning("Gemini API key is not configured; chat will return a setup message.")
 
 class ChatRequest(BaseModel):
     message: str
@@ -26,7 +26,10 @@ class ChatRequest(BaseModel):
 @router.post("/{student_id}")
 def chat_with_ai(student_id: str, request: ChatRequest, db: Session = Depends(get_db)):
     if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="Gemini API key is missing. Please configure GEMINI_API_KEY in .env")
+        raise HTTPException(
+            status_code=503,
+            detail="AI chat is temporarily unavailable because GEMINI_API_KEY is not configured.",
+        )
 
     try:
         genai.configure(api_key=GEMINI_API_KEY)
