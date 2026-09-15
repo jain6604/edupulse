@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, File, UploadFile, Response
 from fastapi.responses import FileResponse
 import shutil
 from sqlalchemy.orm import Session
@@ -10,6 +10,7 @@ from jose import jwt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
+from email_service import send_welcome_email
 
 load_dotenv()
 
@@ -46,7 +47,11 @@ def create_token(data: dict):
 # REGISTER
 # ============================================
 @router.post("/register", response_model=StudentResponse)
-def register(student: StudentCreate, db: Session = Depends(get_db)):
+def register(
+    student: StudentCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     import traceback
     try:
         # Check if email already exists
@@ -72,6 +77,11 @@ def register(student: StudentCreate, db: Session = Depends(get_db)):
         db.add(new_student)
         db.commit()
         db.refresh(new_student)
+        background_tasks.add_task(
+            send_welcome_email,
+            recipient=new_student.email,
+            student_name=new_student.name,
+        )
         return new_student
     except HTTPException:
         raise

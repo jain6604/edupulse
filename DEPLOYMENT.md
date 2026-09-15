@@ -28,3 +28,20 @@ Keep `REACT_APP_API_URL` set to the deployed Render backend URL in Vercel projec
 2. Open `https://edupulse-sandy-nu.vercel.app`.
 3. Log in, open the dashboard, and confirm API-backed metrics load.
 4. Send one AI-chat message; if Gemini is not configured, the UI should show an availability message rather than crashing the backend.
+## Optional welcome email
+
+EduPulse can send a welcome email after a new user registers. This is intentionally
+non-blocking: registration remains successful if the mail provider is unavailable.
+
+For free Gmail SMTP, enable two-step verification for a dedicated Gmail account and
+create a Google App Password. In Render, add these environment variables:
+
+```text
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-sending-email@gmail.com
+SMTP_APP_PASSWORD=your-16-character-google-app-password
+SMTP_FROM_EMAIL=your-sending-email@gmail.com
+```
+
+Never commit the app password or add it to the frontend.
